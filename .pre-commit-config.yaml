@@ -2,14 +2,14 @@
 # See https://pre-commit.com/hooks.html for more hooks
 repos:
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v4.5.0
+  rev: v4.6.0
   hooks:
   - id: trailing-whitespace
   - id: end-of-file-fixer
   - id: check-yaml
   - id: check-added-large-files
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.2.1
+  rev: v0.6.0
   hooks:
   - id: ruff
     types_or: [python, pyi, jupyter]
@@ -20,8 +20,12 @@ repos:
   - id: pydocstyle
 - repo: https://github.com/astral-sh/uv-pre-commit
   # uv version.
-  rev: 0.2.33
+  rev: 0.2.36
   hooks:
   # Compile requirements
   - id: pip-compile
     args: [requirements.in, -o, requirements.txt]
+- repo: https://github.com/shellcheck-py/shellcheck-py
+  rev: v0.10.0.1
+  hooks:
+  - id: shellcheck
