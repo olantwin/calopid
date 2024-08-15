@@ -1,0 +1,12 @@
+executable            = imager.sh
+arguments             = $(ProcId)
+output                = logs/imager.$(ClusterId).$(ProcId).out
+error                 = logs/imager.$(ClusterId).$(ProcId).err
+log                   = logs/imager.$(ClusterId).log
+getenv = False
+notification = Never
+RequestCpus = 4
+transfer_output_files = ""
+requirements = (OpSysAndVer =?= "AlmaLinux9")
++JobFlavour             ="longlunch"
+queue 100
