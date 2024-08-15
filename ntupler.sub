@@ -1,0 +1,12 @@
+executable            = ntupler.sh
+arguments             = $(ProcId)
+output                = logs/ntupler.$(ClusterId).$(ProcId).out
+error                 = logs/ntupler.$(ClusterId).$(ProcId).err
+log                   = logs/ntupler.$(ClusterId).log
+getenv = False
+notification = Never
+RequestCpus = 4
+transfer_output_files = ""
+requirements = (OpSysAndVer =?= "AlmaLinux9")
++JobFlavour             ="espresso"
+queue 100
