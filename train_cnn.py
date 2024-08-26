@@ -84,7 +84,7 @@ def main():
     )
 
     model_name = "_".join(os.path.split(args.model)[-1].split("_")[:3])
-    n_events = int(os.path.split(args.model)[-1].split("_")[3][1:]) + events.num_entries
+    n_events = events.num_entries
     epochs = (
         int(os.path.split(args.model)[-1].split("_")[4][1:].split(".")[0]) + args.epochs
     )
