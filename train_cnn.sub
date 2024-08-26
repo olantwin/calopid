@@ -1,0 +1,19 @@
+executable            = train_cnn.sh
+arguments             = $(model) $(batch_size) 15
+output                = logs/train_cnn.$(ClusterId).$(ProcId).out
+error                 = logs/train_cnn.$(ClusterId).$(ProcId).err
+log                   = logs/train_cnn.$(ClusterId).log
+getenv = False
+notification = Never
+request_CPUs = 4
+request_GPUs = 1
+transfer_output_files = ""
+requirements = (OpSysAndVer =?= "AlmaLinux9")
++JobFlavour = "testmatch"
+queue model, batch_size from (
+    CNN_3d_breithorn_n179956_e7.keras, 64
+    CNN_3d_breithorn_n179956_e7.keras, 64
+    CNN_3d_breithorn_n179956_e7.keras, 64
+    CNN_3d_breithorn_n179956_e7.keras, 64
+    CNN_3d_breithorn_n179956_e7.keras, 64
+)
