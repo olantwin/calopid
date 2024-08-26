@@ -2,11 +2,13 @@
 # coding: utf-8
 """Create images and features for use in CNNs."""
 
+import os
 import argparse
 import logging
 import ROOT
-import pandas as pd
+import uproot
 import numpy as np
+from tqdm import tqdm
 
 
 def main():
@@ -20,6 +22,12 @@ def main():
         required=True,
     )
     parser.add_argument(
+        "-o",
+        "--outputfile",
+        help="""Output file to write to.""",
+        required=True,
+    )
+    parser.add_argument(
         "-j",
         "--num_cpu",
         default=1,
@@ -29,67 +37,98 @@ def main():
     args = parser.parse_args()
     ROOT.EnableImplicitMT(args.num_cpu)
 
-    df = ROOT.ROOT.RDataFrame("cbmsim", args.inputfiles)
-
-    df = df.Filter(
-        "Digi_AdvMuFilterHits.GetEntries() || Digi_AdvTargetHits.GetEntries()"
-    )
-    count = df.Count()
-
     ROOT.gInterpreter.ProcessLine('#include "ShipMCTrack.h"')
     ROOT.gInterpreter.ProcessLine('#include "AdvTargetHit.h"')
     ROOT.gInterpreter.ProcessLine('#include "AdvMuFilterHit.h"')
 
+    df = ROOT.ROOT.RDataFrame("cbmsim", args.inputfiles)
+
+    df = df.Filter(
+        "Digi_AdvMuFilterHits.GetEntries() || Digi_AdvTargetHits.GetEntries()",
+        "Preselection",
+    )
     ROOT.gInterpreter.Declare(
         """
-    int station_from_id(int id) {
+        int station_from_id(int id) {
         return id >>17;
-    }
-    """
+        }
+        """
     )
     ROOT.gInterpreter.Declare(
         """
-    int column_from_id(int id) {
+        int column_from_id(int id) {
         return (id >> 11) % 4;
-    }
-    """
+        }
+        """
     )
     ROOT.gInterpreter.Declare(
         """
-    int sensor_from_id(int id) {
+        int sensor_from_id(int id) {
         return (id >> 10) % 2;
-    }
-    """
+        }
+        """
     )
     ROOT.gInterpreter.Declare(
         """
-    int strip_from_id(int id) {
+        int strip_from_id(int id) {
         return (id) % 1024;
-    }
-    """
+        }
+        """
     )
     ROOT.gInterpreter.Declare(
         """
-    int plane_from_id(int id) {
+        int plane_from_id(int id) {
         return (id >> 16) % 2;
-    }
-    """
+        }
+        """
     )
     ROOT.gInterpreter.Declare(
         """
-    template<typename T>
-    ROOT::RVec<T> Deduplicate (ROOT::RVec<T> v){
-        std::sort(v.begin(), v.end());
-        auto last = std::unique(v.begin(), v.end());
-        v.erase(last, v.end());
-        return v;
-    }
-    """
+        int is_charged_lepton(int id) {
+        return (abs(id) == 11) || (abs(id) == 13) || (abs(id) == 15);
+        }
+        """
+    )
+    # TODO simplify? Careful, very fragile!
+    ROOT.gInterpreter.Declare(
+        """
+        int index_from_id(int id) {
+            int columns_mufilter = column_from_id(id);
+            int sensors_mufilter = sensor_from_id(id);
+            int strips_mufilter = strip_from_id(id);
+            return (
+            (
+                2 * columns_mufilter
+                + abs((1 - (2 * sensors_mufilter)) * columns_mufilter) % 2
+                + sensors_mufilter
+                - 2 * (sensors_mufilter * columns_mufilter % 2)
+                + columns_mufilter % 2
+                + 2
+                - 2 * (columns_mufilter + sensors_mufilter >= 1)
+            )
+            * 768
+            + pow(-1, columns_mufilter) * strips_mufilter
+            - 2 * strips_mufilter * (columns_mufilter == 0)
+            - 1 * (columns_mufilter % 2)
+            - 1 * (columns_mufilter == 0)
+            );
+        }
+        """
     )
 
     df = (
         df.Define("start_z", "dynamic_cast<ShipMCTrack*>(MCTrack[1])->GetStartZ()")
         .Define("nu_energy", "dynamic_cast<ShipMCTrack*>(MCTrack[0])->GetEnergy()")
+        .Define("nu_flavour", "dynamic_cast<ShipMCTrack*>(MCTrack[0])->GetPdgCode()")
+        .Define(
+            "is_cc",
+            "is_charged_lepton(dynamic_cast<ShipMCTrack*>(MCTrack[1])->GetPdgCode())",
+        )
+        .Filter("is_cc", "Only CC")
+        .Define(
+            "lepton_energy", "dynamic_cast<ShipMCTrack*>(MCTrack[1])->GetEnergy()"
+        )  # TODO not reconstructible in NC case
+        .Define("hadron_energy", "nu_energy - lepton_energy")
         .Define("energy_dep_target", "Sum(AdvTargetPoint.fELoss)")
         .Define("energy_dep_mufilter", "Sum(AdvMuFilterPoint.fELoss)")
         .Define("stations", "Map(Digi_AdvTargetHits.fDetectorID, station_from_id)")
@@ -98,44 +137,102 @@ def main():
         .Define("strips", "Map(Digi_AdvTargetHits.fDetectorID, strip_from_id)")
         .Define("planes", "Map(Digi_AdvTargetHits.fDetectorID, plane_from_id)")
         .Define(
+            "stations_mufilter",
+            "Map(Digi_AdvMuFilterHits.fDetectorID, station_from_id)",
+        )
+        .Define(
+            "columns_mufilter", "Map(Digi_AdvMuFilterHits.fDetectorID, column_from_id)"
+        )
+        .Define(
+            "sensors_mufilter", "Map(Digi_AdvMuFilterHits.fDetectorID, sensor_from_id)"
+        )
+        .Define(
+            "strips_mufilter", "Map(Digi_AdvMuFilterHits.fDetectorID, strip_from_id)"
+        )
+        .Define(
+            "planes_mufilter", "Map(Digi_AdvMuFilterHits.fDetectorID, plane_from_id)"
+        )
+        .Define(
             "indices",
             "(4 * columns + sensors - 2 * columns * sensors) * 768 + pow(-1, columns) * strips - 1 * columns",
         )
+        .Define(
+            "indices_mufilter", "Map(Digi_AdvMuFilterHits.fDetectorID, index_from_id)"
+        )
     )
 
-    col_names = [
+    report = df.Report()
+
+    col_names = {
         "start_z",
         "nu_energy",
+        "hadron_energy",
+        "lepton_energy",
+        "nu_flavour",
+        "is_cc",
         "energy_dep_target",
         "energy_dep_mufilter",
         "indices",
         "stations",
         "planes",
-    ]
+        "indices_mufilter",
+        "stations_mufilter",
+        "planes_mufilter",
+    }
 
-    cols = df.AsNumpy(col_names)
-    n_events = count.GetValue()
+    df.Snapshot(
+        "df", "temporary.root", col_names
+    )  # TODO Use TMatrix to avoid detour via uproot?
+    report.Print()
 
-    hitmaps = np.zeros((n_events, 3072, 200))
-
-    for event in range(n_events):
-        indices = np.array(cols["indices"][event], dtype=int)
-        stations = np.array(cols["stations"][event], dtype=int)
-        planes = np.array(cols["planes"][event], dtype=int)
-        hitmaps[event, indices, 2 * stations + planes] = 1
-        del indices
-        del planes
-        del stations
-
-    np.save(f"images_{n_events}.npy", hitmaps)
-
-    pandas_df = pd.DataFrame(cols)
-
-    pandas_df.pop("stations")
-    pandas_df.pop("indices")
-    pandas_df.pop("planes")
-
-    pandas_df.to_csv(f"features_CNN_{n_events}.csv")
+    events = uproot.open("temporary.root:df")
+    # TODO second file for testing?
+    outputfile = uproot.recreate(args.outputfile)
+    outputfile.mktree(
+        "df",
+        {
+            "X": (">f4", (3072, 200)),
+            "X_mufilter": (">f4", (4608, 42)),
+            "start_z": ">f8",
+            "nu_energy": ">f8",
+            "hadron_energy": ">f8",
+            "lepton_energy": ">f8",
+            "energy_dep_target": ">f8",
+            "energy_dep_mufilter": ">f8",
+            "nu_flavour": ">i8",
+            "is_cc": "bool",
+        },
+        title="Dataframe for CNN studies",
+    )
+    for batch in tqdm(events.iterate(step_size="1MB", library="np")):
+        batch_size = batch["is_cc"].shape[0]
+        hitmaps = np.zeros((batch_size, 3072, 200))
+        hitmaps_mufilter = np.zeros((batch_size, 4608, 42))
+        for i in range(batch_size):
+            indices = batch["indices"][i].astype(int)
+            stations = batch["stations"][i].astype(int)
+            planes = batch["planes"][i].astype(int)
+            hitmaps[i, indices, 2 * stations + planes] = 1
+            indices = batch["indices_mufilter"][i].astype(int)
+            stations = batch["stations_mufilter"][i].astype(int)
+            planes = batch["planes_mufilter"][i].astype(int)
+            hitmaps_mufilter[i, indices, 2 * stations + planes] = 1
+        outputfile["df"].extend(
+            {
+                "X": hitmaps.astype(np.float32),
+                "X_mufilter": hitmaps_mufilter.astype(np.float32),
+                "start_z": batch["start_z"],
+                "nu_energy": batch["nu_energy"],
+                "hadron_energy": batch["hadron_energy"],
+                "lepton_energy": batch["lepton_energy"],
+                "energy_dep_target": batch["energy_dep_target"],
+                "energy_dep_mufilter": batch["energy_dep_mufilter"],
+                "nu_flavour": batch["nu_flavour"],
+                "is_cc": batch["is_cc"],
+            }
+        )
+    outputfile.close()
+    os.remove("temporary.root")
 
 
 if __name__ == "__main__":
