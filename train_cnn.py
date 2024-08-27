@@ -15,7 +15,7 @@ from tensorflow.keras.models import load_model
 def event_generator(filename):
     """Generate events for CNN training."""
     with uproot.open(filename) as tree:
-        for batch in tree.iterate(step_size="1MB", library="np"):
+        for batch in tree.iterate(step_size=1, library="np"):
             hitmaps, start_z, nu_energy, energy_dep_target, _ = batch.values()
             for i in range(hitmaps.shape[0]):
                 yield hitmaps.astype(np.float16)[i], start_z[i]
