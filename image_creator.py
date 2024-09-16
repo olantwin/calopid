@@ -34,12 +34,19 @@ def main():
         type=int,
         help="""Number of threads to use.""",
     )
+    parser.add_argument(
+        "--saturation",
+        default=1,
+        type=int,
+        help="""Saturation threshold, defaults to digital →1.""",
+    )
     args = parser.parse_args()
     ROOT.EnableImplicitMT(args.num_cpu)
 
     ROOT.gInterpreter.ProcessLine('#include "ShipMCTrack.h"')
     ROOT.gInterpreter.ProcessLine('#include "AdvTargetHit.h"')
     ROOT.gInterpreter.ProcessLine('#include "AdvMuFilterHit.h"')
+    ROOT.gInterpreter.ProcessLine('#include "Hit2MCPoints.h"')
 
     df = ROOT.ROOT.RDataFrame("cbmsim", args.inputfiles)
 
@@ -89,6 +96,32 @@ def main():
         }
         """
     )
+    ROOT.gInterpreter.Declare(
+        """
+        ROOT::RVec<std::unordered_map<int, float>> wlist(Hit2MCPoints* link, ROOT::RVec<int> ids) {
+            ROOT::RVec<std::unordered_map<int, float>> wlists{};
+            for (auto&& id : ids) {
+                wlists.push_back(link->wList(id));
+            }
+            return wlists;
+        }
+        """
+    )
+    ROOT.gInterpreter.Declare(
+        """
+        int points_from_weights(std::unordered_map<int, float> weights) {
+            return weights.size();
+        }
+        """
+    )
+    ROOT.gInterpreter.Declare(f"const int SATURATION = {args.saturation};")
+    ROOT.gInterpreter.Declare(
+        """
+        int apply_saturation(int points) {
+            return min(points, SATURATION);
+        }
+        """
+    )
     # TODO simplify? Careful, very fragile!
     ROOT.gInterpreter.Declare(
         """
@@ -131,6 +164,27 @@ def main():
         .Define("hadron_energy", "nu_energy - lepton_energy")
         .Define("energy_dep_target", "Sum(AdvTargetPoint.fELoss)")
         .Define("energy_dep_mufilter", "Sum(AdvMuFilterPoint.fELoss)")
+        .Define(
+            "link_target", "dynamic_cast<Hit2MCPoints*>(Digi_AdvTargetHits2MCPoints[0])"
+        )
+        .Define("weights_target", "wlist(link_target, Digi_AdvTargetHits.fDetectorID)")
+        .Define("points_per_hit_target", "Map(weights_target, points_from_weights)")
+        .Define(
+            "saturated_points_per_hit_target",
+            "Map(points_per_hit_target, apply_saturation)",
+        )
+        .Define(
+            "link_mufilter",
+            "dynamic_cast<Hit2MCPoints*>(Digi_AdvMuFilterHits2MCPoints[0])",
+        )
+        .Define(
+            "weights_mufilter", "wlist(link_mufilter, Digi_AdvMuFilterHits.fDetectorID)"
+        )
+        .Define("points_per_hit_mufilter", "Map(weights_mufilter, points_from_weights)")
+        .Define(
+            "saturated_points_per_hit_mufilter",
+            "Map(points_per_hit_mufilter, apply_saturation)",
+        )
         .Define("stations", "Map(Digi_AdvTargetHits.fDetectorID, station_from_id)")
         .Define("columns", "Map(Digi_AdvTargetHits.fDetectorID, column_from_id)")
         .Define("sensors", "Map(Digi_AdvTargetHits.fDetectorID, sensor_from_id)")
@@ -178,6 +232,8 @@ def main():
         "indices_mufilter",
         "stations_mufilter",
         "planes_mufilter",
+        "saturated_points_per_hit_target",
+        "saturated_points_per_hit_mufilter",
     }
 
     df.Snapshot(
@@ -212,11 +268,13 @@ def main():
             indices = batch["indices"][i].astype(int)
             stations = batch["stations"][i].astype(int)
             planes = batch["planes"][i].astype(int)
-            hitmaps[i, indices, 2 * stations + planes] = 1
+            points = batch["saturated_points_per_hit_target"][i].astype(int)
+            hitmaps[i, indices, 2 * stations + planes] = points
             indices = batch["indices_mufilter"][i].astype(int)
             stations = batch["stations_mufilter"][i].astype(int)
             planes = batch["planes_mufilter"][i].astype(int)
-            hitmaps_mufilter[i, indices, 2 * stations + planes] = 1
+            points = batch["saturated_points_per_hit_mufilter"][i].astype(int)
+            hitmaps_mufilter[i, indices, 2 * stations + planes] = points
         outputfile["df"].extend(
             {
                 "X": hitmaps.astype(np.float32),
