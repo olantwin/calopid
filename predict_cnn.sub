@@ -1,0 +1,21 @@
+executable            = predict_cnn.sh
+arguments             = $(model) $(batch_size) $(target)
+output                = logs/predict_cnn.$(ClusterId).$(ProcId).out
+error                 = logs/predict_cnn.$(ClusterId).$(ProcId).err
+log                   = logs/predict_cnn.$(ClusterId).log
+getenv = False
+notification = Never
+request_CPUs = 4
+request_GPUs = 1
+transfer_output_files = ""
+# Time per epoch:
+# V100 ~ 2h
+# T4 ~ 1h15
+# A100 ~ 2h30
+# H100 ~ 0h45 (no difference if requesting more GPUs)
+# P100 ~ 3h30
+requirements = (OpSysAndVer =?= "AlmaLinux9") && regexp("H100", TARGET.GPUs_DeviceName)
++JobFlavour = "espresso"
+queue model, batch_size, target from (
+    CNN_3dSat5_grandjorasses_nu_energy_n60578_e100.keras, 40, nu_energy
+)
