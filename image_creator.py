@@ -150,7 +150,9 @@ def main():
     )
 
     df = (
-        df.Define("start_z", "dynamic_cast<ShipMCTrack*>(MCTrack[1])->GetStartZ()")
+        df.Define("start_x", "dynamic_cast<ShipMCTrack*>(MCTrack[1])->GetStartX()")
+        .Define("start_y", "dynamic_cast<ShipMCTrack*>(MCTrack[1])->GetStartY()")
+        .Define("start_z", "dynamic_cast<ShipMCTrack*>(MCTrack[1])->GetStartZ()")
         .Define("nu_energy", "dynamic_cast<ShipMCTrack*>(MCTrack[0])->GetEnergy()")
         .Define("nu_flavour", "dynamic_cast<ShipMCTrack*>(MCTrack[0])->GetPdgCode()")
         .Define(
@@ -218,6 +220,8 @@ def main():
     report = df.Report()
 
     col_names = {
+        "start_x",
+        "start_y",
         "start_z",
         "nu_energy",
         "hadron_energy",
@@ -249,6 +253,8 @@ def main():
         {
             "X": (">f4", (3072, 200)),
             "X_mufilter": (">f4", (4608, 42)),
+            "start_x": ">f8",
+            "start_y": ">f8",
             "start_z": ">f8",
             "nu_energy": ">f8",
             "hadron_energy": ">f8",
@@ -279,6 +285,8 @@ def main():
             {
                 "X": hitmaps.astype(np.float32),
                 "X_mufilter": hitmaps_mufilter.astype(np.float32),
+                "start_x": batch["start_x"],
+                "start_y": batch["start_y"],
                 "start_z": batch["start_z"],
                 "nu_energy": batch["nu_energy"],
                 "hadron_energy": batch["hadron_energy"],
