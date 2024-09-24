@@ -1,4 +1,4 @@
-TAG=2024/08
+TAG=2024/09
 ADVSNDBUILD_DIR=/afs/cern.ch/user/o/olantwin/SND
 source /cvmfs/sndlhc.cern.ch/SNDLHC-2024/June25/setUp.sh
 source $ADVSNDBUILD_DIR/nusim_automation/env_cleanup.sh
