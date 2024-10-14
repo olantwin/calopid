@@ -20,7 +20,7 @@ repos:
   - id: pydocstyle
 - repo: https://github.com/astral-sh/uv-pre-commit
   # uv version.
-  rev: 0.4.18
+  rev: 0.4.20
   hooks:
   # Compile requirements
   - id: pip-compile
