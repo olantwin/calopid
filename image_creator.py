@@ -2,12 +2,13 @@
 # coding: utf-8
 """Create images and features for use in CNNs."""
 
-import os
 import argparse
 import logging
+import os
+
+import numpy as np
 import ROOT
 import uproot
-import numpy as np
 from tqdm import tqdm
 
 
