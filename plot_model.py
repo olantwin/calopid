@@ -5,8 +5,9 @@
 import argparse
 import logging
 import os.path
-from tensorflow.keras.utils import plot_model
+
 from tensorflow.keras.models import load_model
+from tensorflow.keras.utils import plot_model
 
 
 def main():

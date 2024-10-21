@@ -4,11 +4,12 @@
 
 import argparse
 import logging
-import uproot
-import pandas as pd
-import numpy as np
 import os.path
+
+import numpy as np
+import pandas as pd
 import tensorflow as tf
+import uproot
 from tensorflow.keras.models import load_model
 
 

@@ -4,8 +4,9 @@
 
 import argparse
 import logging
-import ROOT
+
 import pandas as pd
+import ROOT
 
 
 def main():
