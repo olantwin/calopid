@@ -9,7 +9,7 @@ repos:
   - id: check-yaml
   - id: check-added-large-files
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.7.3
+  rev: v0.7.4
   hooks:
   - id: ruff
     types_or: [python, pyi, jupyter]
@@ -20,7 +20,7 @@ repos:
   - id: pydocstyle
 - repo: https://github.com/astral-sh/uv-pre-commit
   # uv version.
-  rev: 0.5.1
+  rev: 0.5.2
   hooks:
   # Compile requirements
   - id: pip-compile
@@ -35,6 +35,6 @@ repos:
     - id: isort
       name: isort (python)
 - repo: https://github.com/kynan/nbstripout
-  rev: 0.8.0
+  rev: 0.8.1
   hooks:
     - id: nbstripout
