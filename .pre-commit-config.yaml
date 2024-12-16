@@ -9,7 +9,7 @@ repos:
   - id: check-yaml
   - id: check-added-large-files
 - repo: https://github.com/astral-sh/ruff-pre-commit
-  rev: v0.8.2
+  rev: v0.8.3
   hooks:
   - id: ruff
     types_or: [python, pyi, jupyter]
@@ -20,7 +20,7 @@ repos:
   - id: pydocstyle
 - repo: https://github.com/astral-sh/uv-pre-commit
   # uv version.
-  rev: 0.5.7
+  rev: 0.5.9
   hooks:
   # Compile requirements
   - id: pip-compile
