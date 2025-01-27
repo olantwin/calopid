@@ -6,8 +6,8 @@ import argparse
 import logging
 import os
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import ROOT
 import uproot
 from tqdm import tqdm
