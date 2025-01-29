@@ -13,7 +13,7 @@ def reshape_data(hitmaps, hitmaps_mufilter, truth):
     X_v = tf.expand_dims(hitmaps_v_T, 2)
     X_h = tf.expand_dims(hitmaps_h_T, 2)
     hitmaps_v = hitmaps_mufilter[:, ::2]
-    hitmaps_h = hitmaps_mufilter[:, 1:10:2]
+    hitmaps_h = hitmaps_mufilter[:, 1::2]
     hitmaps_v_T = tf.transpose(hitmaps_v)
     hitmaps_h_T = tf.transpose(hitmaps_h)
     X_mufilter_v = tf.expand_dims(hitmaps_v_T, 2)

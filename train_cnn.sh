@@ -1,11 +1,11 @@
 #!/usr/bin/env sh
 #
 # shellcheck disable=SC1091
-. /cvmfs/sft.cern.ch/lcg/views/LCG_105a_swan/x86_64-el9-gcc13-opt/setup.sh
+. /cvmfs/sft.cern.ch/lcg/views/LCG_106a_swan/x86_64-el9-gcc13-opt/setup.sh
 
-DATAPATH=/eos/user/o/olantwin/SWAN_projects/calopid/
+DATAPATH=/eos/user/o/olantwin/SWAN_projects/noexcav/
 MODELPATH="$DATAPATH"
-INPUTFILE=CNN_dataframe_80000_train.root
+INPUTFILE=$4
 MODELFILE=$1
 BATCH_SIZE=$2
 EPOCHS=$3

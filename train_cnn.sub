@@ -1,5 +1,5 @@
 executable            = train_cnn.sh
-arguments             = $(model) $(batch_size) 80
+arguments             = $(model) $(batch_size) $(epochs) $(data_file)
 output                = logs/train_cnn.$(ClusterId).$(ProcId).out
 error                 = logs/train_cnn.$(ClusterId).$(ProcId).err
 log                   = logs/train_cnn.$(ClusterId).log
@@ -15,6 +15,6 @@ transfer_output_files = ""
 # P100 ~ 3h30
 requirements = (OpSysAndVer =?= "AlmaLinux9") && regexp("H100", TARGET.GPUs_DeviceName)
 +JobFlavour = "testmatch"
-queue model, batch_size from (
-    CNN_3d_breithorn_n179956_e7.keras, 64
+queue model, batch_size, epochs, data_file from (
+    CNN_incahuasi_logit_focus_nu_flavour_muvtau_e0.keras, 64, 100, df_nu_CC_muonic_equal_train.root
 )
