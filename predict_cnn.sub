@@ -17,14 +17,5 @@ transfer_output_files = ""
 requirements = (OpSysAndVer =?= "AlmaLinux9") && regexp("H100", TARGET.GPUs_DeviceName)
 +JobFlavour = "espresso"
 queue model, batch_size, target, input_file from (
-    CNN_3d_grandjorasses_nu_energy_n60578_e75.keras, 40, nu_energy, dataframe_CC_test_1.root
-    CNN_3d_grandjorasses_nu_energy_n60578_e75.keras, 40, nu_energy, dataframe_CC_test_2.root
-    CNN_3d_grandjorasses_nu_energy_n60578_e75.keras, 40, nu_energy, dataframe_CC_test_3.root
-    CNN_3d_grandjorasses_nu_energy_n60578_e75.keras, 40, nu_energy, dataframe_CC_test_4.root
-    CNN_3d_grandjorasses_nu_energy_n60578_e75.keras, 40, nu_energy, dataframe_CC_test_5.root
-    CNN_3d_grandjorasses_nu_energy_n60578_e75.keras, 40, nu_energy, dataframe_CC_test_6.root
-    CNN_3d_grandjorasses_nu_energy_n60578_e75.keras, 40, nu_energy, dataframe_CC_test_7.root
-    CNN_3d_grandjorasses_nu_energy_n60578_e75.keras, 40, nu_energy, dataframe_CC_test_8.root
-    CNN_3d_grandjorasses_nu_energy_n60578_e75.keras, 40, nu_energy, dataframe_CC_test_9.root
-    CNN_3d_grandjorasses_nu_energy_n60578_e75.keras, 40, nu_energy, dataframe_CC_test_10.root
+    CNN_3d_grandjorasses_nu_energy_n60578_e75.keras, 40, nu_energy, dataframe_CC_test.root
 )

@@ -48,6 +48,31 @@ def main():
         help="""Use channel mapping etc. for new no-excavation geometry.""",
     )
     parser.add_argument(
+        "--muonic",
+        action="store_true",
+        help="""Select muonic events for ν_τ.""",
+    )
+    parser.add_argument(
+        "--hadronic",
+        action="store_true",
+        help="""Select non-muonic events for ν_τ.""",
+    )
+    parser.add_argument(
+        "--CC",
+        action="store_true",
+        help="""Select CC events for neutrinos.""",
+    )
+    parser.add_argument(
+        "--NC",
+        action="store_true",
+        help="""Select NC events for neutrinos.""",
+    )
+    parser.add_argument(
+        "--fiducial",
+        action="store_true",
+        help="""Cut on fiducial volume.""",
+    )
+    parser.add_argument(
         "--plot_events",
         action="store_true",
         help="""Plot events and save them to file.""",
@@ -188,19 +213,65 @@ def main():
         }
         """
     )
+    ROOT.gInterpreter.Declare(
+        """
+        bool is_muonic(const TClonesArray& tracks) {
+             for (auto* track: tracks) {
+                 auto* particle = dynamic_cast<ShipMCTrack*>(track);
+                 if (particle->GetMotherId() == 1) {
+                     if (abs(particle->GetPdgCode()) == 13) {
+                         return true;
+                     }
+                 }
+             }
+             return false;
+        }
+        """
+    )
+    ROOT.gInterpreter.Declare(
+        """
+        bool fiducial_cut(double x, double y, double z) {
+             if (x < -30 || x > -10)
+                  return false;
+             if (y < 35 || y > 55)
+                  return false;
+             if (z < -20 || z > 20)
+                  return false;
+             return true;
+        }
+        """
+    )
 
     df = (
         df.Define("start_x", "dynamic_cast<ShipMCTrack*>(MCTrack[1])->GetStartX()")
         .Define("start_y", "dynamic_cast<ShipMCTrack*>(MCTrack[1])->GetStartY()")
         .Define("start_z", "dynamic_cast<ShipMCTrack*>(MCTrack[1])->GetStartZ()")
+        .Define("is_fiducial", "fiducial_cut(start_x, start_y, start_z)")
         .Define("nu_energy", "dynamic_cast<ShipMCTrack*>(MCTrack[0])->GetEnergy()")
         .Define("nu_flavour", "dynamic_cast<ShipMCTrack*>(MCTrack[0])->GetPdgCode()")
         .Define(
             "is_cc",
             "is_charged_lepton(dynamic_cast<ShipMCTrack*>(MCTrack[1])->GetPdgCode())",
         )
-        .Filter("is_cc", "Only CC")
         .Define(
+            "is_nc",
+            "!is_cc",
+        )
+        .Define("muonic", "is_muonic(MCTrack)")
+        .Define("non_muonic", "!muonic")
+        )
+    if args.fiducial:
+       df = df.Filter("is_fiducial", "Fiducial volume cut")
+    if args.CC:
+       df = df.Filter("is_cc", "Only CC")
+    elif args.NC:
+       df = df.Filter("is_nc", "Only NC")
+    if args.muonic:
+       df = df.Filter("muonic", "Only muonic")
+    elif args.hadronic:
+       df = df.Filter("non_muonic", "Everything but muonic")
+    df = (
+        df.Define(
             "lepton_energy", "dynamic_cast<ShipMCTrack*>(MCTrack[1])->GetEnergy()"
         )  # TODO not reconstructible in NC case
         .Define("hadron_energy", "nu_energy - lepton_energy")
@@ -304,6 +375,7 @@ def main():
         "lepton_energy",
         "nu_flavour",
         "is_cc",
+        "muonic",
         "energy_dep_target",
         "energy_dep_mufilter",
         "indices",
