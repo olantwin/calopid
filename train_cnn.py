@@ -11,26 +11,23 @@ import pandas as pd
 import tensorflow as tf
 import uproot
 from tensorflow.keras.models import load_model
+from sklearn.preprocessing import LabelEncoder
+from tensorflow.keras.callbacks import ReduceLROnPlateau
+
+from config import tensor_spec_target, tensor_spec_mufilter
+from preprocessing import reshape_data
 
 
-def event_generator(filename):
-    """Generate events for CNN training."""
-    with uproot.open(filename) as tree:
-        for batch in tree.iterate(step_size=1, library="np"):
-            hitmaps, start_z, nu_energy, energy_dep_target, _ = batch.values()
-            for i in range(hitmaps.shape[0]):
-                yield hitmaps.astype(np.float16)[i], start_z[i]
-
-
-def reshape_data(hitmaps, truth):
-    """Reshape inpout data for CNN."""
-    hitmaps_v = hitmaps[:, ::2]
-    hitmaps_h = hitmaps[:, 1::2]
-    hitmaps_v_T = tf.transpose(hitmaps_v)
-    hitmaps_h_T = tf.transpose(hitmaps_h)
-    X_v = tf.expand_dims(hitmaps_v_T, 2)
-    X_h = tf.expand_dims(hitmaps_h_T, 2)
-    return (X_v, X_h), truth
+def event_generator(filename, target, le):
+    with uproot.open(filename) as events:
+        for batch, report in events.iterate(step_size=1, report=True, library="np"):
+            ys = le.transform(np.abs(batch[target]))
+            for i in range(batch["X"].shape[0]):
+                yield (
+                    batch["X"].astype(np.float16)[i],
+                    batch["X_mufilter"].astype(np.float16)[i],
+                    ys[i],
+                )
 
 
 def main():
@@ -60,16 +57,33 @@ def main():
         help="""Training dataset to use.""" """Supports retieval via XRootD.""",
         required=True,
     )
+    parser.add_argument(
+        "--regression",
+        help="""Whether to perform regression or classification (default).""",
+        action="store_true",
+    )
+    parser.add_argument(
+        "--target",
+        help="""Target variable for inference.""",
+        default="nu_flavour",
+        choices=["nu_flavour", "nu_energy"],
+    )
     args = parser.parse_args()
 
     events = uproot.open(args.data + ":df")
 
+    le = LabelEncoder()
+    le.fit([12 if "non-muonic" in args.data else 14, 16])
+
     ds_train = (
         tf.data.Dataset.from_generator(
-            (lambda: event_generator(args.data + ":df")),
+            (lambda: event_generator(args.data + ":df", args.target, le)),
             output_signature=(
-                tf.TensorSpec(shape=(3072, 200), dtype=tf.float16),
-                tf.TensorSpec(shape=(), dtype=tf.float64),
+                tf.TensorSpec(shape=tensor_spec_target, dtype=tf.float16),
+                tf.TensorSpec(shape=tensor_spec_mufilter, dtype=tf.float16),
+                tf.TensorSpec(
+                    shape=(), dtype=tf.float64 if args.regression else tf.int64
+                ),
             ),
         )
         .map(reshape_data)
@@ -79,12 +93,17 @@ def main():
 
     model = load_model(args.model)
 
+    reduce_lr = ReduceLROnPlateau(
+        monitor="loss", factor=0.5, patience=6, min_lr=1e-6, verbose=1
+    )
+
     fit_result = model.fit(
         ds_train.prefetch(tf.data.AUTOTUNE),
         epochs=args.epochs,
+        callbacks=[reduce_lr],
     )
 
-    model_name = "_".join(os.path.split(args.model)[-1].split("_")[:3])
+    model_name = model.name
     n_events = events.num_entries
     epochs = (
         int(os.path.split(args.model)[-1].split("_")[4][1:].split(".")[0]) + args.epochs
