@@ -1,9 +1,10 @@
 """Define useful plot styles and utilities."""
 
 import matplotlib.pyplot as plt
-import scienceplots  # noqa: F401
 
-plt.style.use(["science", "notebook"])
+# import scienceplots  # noqa: F401
+
+#:plt.style.use(["science", "notebook"])
 plt.rcParams["font.size"] = 14
 plt.rcParams["axes.formatter.limits"] = -5, 4
 plt.rcParams["figure.figsize"] = 6, 4
