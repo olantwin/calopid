@@ -113,7 +113,7 @@ def main():
 
     model_name = model.name
     n_events = events.num_entries
-    epochs = args.epochs
+    epochs = args.epochs + int(args.model.split("_")[-1].split(".")[0][1:])
     model.save(f"{model_name}_n{n_events}_e{epochs}.keras")
     history = pd.DataFrame(fit_result.history)
     history.to_csv(f"history_{model_name}_n{n_events}_e{epochs}.csv")
