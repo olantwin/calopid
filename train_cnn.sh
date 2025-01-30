@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 #
 # shellcheck disable=SC1091
-. /cvmfs/sft.cern.ch/lcg/views/LCG_106a_swan/x86_64-el9-gcc13-opt/setup.sh
+. /cvmfs/sft.cern.ch/lcg/views/LCG_106b_cuda/x86_64-el9-gcc11-opt/setup.sh
 
 DATAPATH=/eos/user/o/olantwin/SWAN_projects/noexcav/
 MODELPATH="$DATAPATH"

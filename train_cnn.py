@@ -4,24 +4,28 @@
 
 import argparse
 import logging
-import os.path
 
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 import uproot
-from tensorflow.keras.models import load_model
 from sklearn.preprocessing import LabelEncoder
 from tensorflow.keras.callbacks import ReduceLROnPlateau
+from tensorflow.keras.models import load_model
 
-from config import tensor_spec_target, tensor_spec_mufilter
+from config import tensor_spec_mufilter, tensor_spec_target
 from preprocessing import reshape_data
 
 
 def event_generator(filename, target, le):
+    """Generate events for use by Keras from file."""
     with uproot.open(filename) as events:
         for batch, report in events.iterate(step_size=1, report=True, library="np"):
-            ys = le.transform(np.abs(batch[target]))
+            ys = (
+                le.transform(np.abs(batch[target]))
+                if target == "nu_flavour"
+                else np.log(batch[target])
+            )
             for i in range(batch["X"].shape[0]):
                 yield (
                     batch["X"].astype(np.float16)[i],
@@ -72,6 +76,10 @@ def main():
 
     events = uproot.open(args.data + ":df")
 
+    if "energy" in args.model:
+        args.target = "nu_energy"
+        args.regression = True
+
     le = LabelEncoder()
     le.fit([12 if "non-muonic" in args.data else 14, 16])
 
@@ -105,9 +113,7 @@ def main():
 
     model_name = model.name
     n_events = events.num_entries
-    epochs = (
-        int(os.path.split(args.model)[-1].split("_")[4][1:].split(".")[0]) + args.epochs
-    )
+    epochs = args.epochs
     model.save(f"{model_name}_n{n_events}_e{epochs}.keras")
     history = pd.DataFrame(fit_result.history)
     history.to_csv(f"history_{model_name}_n{n_events}_e{epochs}.csv")
