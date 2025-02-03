@@ -259,17 +259,17 @@ def main():
         )
         .Define("muonic", "is_muonic(MCTrack)")
         .Define("non_muonic", "!muonic")
-        )
+    )
     if args.fiducial:
-       df = df.Filter("is_fiducial", "Fiducial volume cut")
+        df = df.Filter("is_fiducial", "Fiducial volume cut")
     if args.CC:
-       df = df.Filter("is_cc", "Only CC")
+        df = df.Filter("is_cc", "Only CC")
     elif args.NC:
-       df = df.Filter("is_nc", "Only NC")
+        df = df.Filter("is_nc", "Only NC")
     if args.muonic:
-       df = df.Filter("muonic", "Only muonic")
+        df = df.Filter("muonic", "Only muonic")
     elif args.hadronic:
-       df = df.Filter("non_muonic", "Everything but muonic")
+        df = df.Filter("non_muonic", "Everything but muonic")
     df = (
         df.Define(
             "lepton_energy", "dynamic_cast<ShipMCTrack*>(MCTrack[1])->GetEnergy()"
