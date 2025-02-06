@@ -10,6 +10,7 @@ import pandas as pd
 import tensorflow as tf
 import uproot
 from sklearn.preprocessing import LabelEncoder
+from tensorflow import keras
 from tensorflow.keras.callbacks import ReduceLROnPlateau
 from tensorflow.keras.models import load_model
 
@@ -99,6 +100,7 @@ def main():
         .batch(args.batch_size)
     )
 
+    keras.config.enable_unsafe_deserialization()
     model = load_model(args.model)
 
     reduce_lr = ReduceLROnPlateau(
