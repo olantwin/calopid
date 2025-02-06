@@ -15,9 +15,9 @@ def watermark(text="preliminary"):
     """Watermark plot."""
     ax = plt.gca()
     plt.text(
-        0.8,
+        0.64,
         1.02,
-        "AdvSND",
+        "SND@HL-LHC",
         fontweight="bold",
         fontfamily="sans-serif",
         fontsize=16,
