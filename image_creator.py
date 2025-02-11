@@ -86,6 +86,7 @@ def main():
     ROOT.gInterpreter.ProcessLine('#include "Hit2MCPoints.h"')
 
     df = ROOT.ROOT.RDataFrame("cbmsim", args.inputfiles)
+    # ROOT.ROOT.RDF.Experimental.AddProgressBar(df)  # Only available in 6.30+
 
     df = df.Filter(
         "Digi_AdvMuFilterHits.GetEntries() || Digi_AdvTargetHits.GetEntries()",
@@ -417,7 +418,8 @@ def main():
         },
         title="Dataframe for CNN studies",
     )
-    for batch in tqdm(events.iterate(step_size="1MB", library="np")):
+    t = tqdm(total=events.num_entries)
+    for batch in events.iterate(step_size="1MB", library="np"):
         batch_size = batch["is_cc"].shape[0]
         hitmaps = np.zeros((batch_size, *target_dims))
         hitmaps_mufilter = np.zeros((batch_size, *mufilter_dims))
@@ -462,6 +464,7 @@ def main():
                 "is_cc": batch["is_cc"],
             }
         )
+        t.update(batch_size)
     outputfile.close()
     os.remove("temporary.root")
 
