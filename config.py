@@ -6,4 +6,4 @@ frac_hadr = 1 - frac_muon
 input_shape = (58, 3279, 1)
 input_shape_mf = (34, 3279, 1)
 tensor_spec_target = (3279, 116)
-tensor_spec_mufilter = (3279, 68)
+tensor_spec_mufilter = (3279, 34)
