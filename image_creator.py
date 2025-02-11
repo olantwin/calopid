@@ -395,7 +395,7 @@ def main():
     report.Print()
 
     target_dims = (3279, 116) if args.new_geo else (3072, 200)
-    mufilter_dims = (3279, 68) if args.new_geo else (4608, 42)
+    mufilter_dims = (3279, 34) if args.new_geo else (4608, 42)
 
     events = uproot.open("temporary.root:df")
     # TODO second file for testing?
@@ -433,7 +433,9 @@ def main():
             stations = batch["stations_mufilter"][i].astype(int)
             planes = batch["planes_mufilter"][i].astype(int)
             points = batch["saturated_points_per_hit_mufilter"][i].astype(int)
-            hitmaps_mufilter[i, indices, 2 * stations + planes] = points
+            hitmaps_mufilter[i, indices[planes == 0], stations[planes == 0]] = points[
+                planes == 0
+            ]
             if args.plot_events:
                 plt.subplot(3, 2, 1)
                 plt.imshow(hitmaps[i, :, 0:-1:2], aspect="auto")
