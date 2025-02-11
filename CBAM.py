@@ -2,8 +2,7 @@ import tensorflow as tf
 from tensorflow.keras import layers
 from tensorflow.keras.layers import (Add, Concatenate, Conv1D, Dense,
                                      GlobalAveragePooling1D,
-                                     GlobalMaxPooling1D, Layer, Multiply,
-                                     Reshape)
+                                     GlobalMaxPooling1D, Multiply, Reshape)
 
 
 class CBAM(layers.Layer):
