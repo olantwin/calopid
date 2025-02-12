@@ -4,6 +4,7 @@ from tensorflow.keras.layers import (Add, Concatenate, Conv1D, Dense,
                                      GlobalAveragePooling1D,
                                      GlobalMaxPooling1D, Multiply, Reshape)
 
+
 class CBAM(layers.Layer):
     """
     Convolutional Block Attention Module (CBAM) layer.
@@ -79,4 +80,3 @@ class CBAM(layers.Layer):
         Creates a CBAM layer instance from its configuration.
         """
         return cls(**config)
-
