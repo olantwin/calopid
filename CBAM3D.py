@@ -11,24 +11,11 @@ class CBAM(layers.Layer):
 
     CBAM sequentially applies channel and spatial attention mechanisms to the input tensor.
     The layer can enhance the feature representations by focusing on the most informative parts.
-
-    Attributes:
-        ratio (int): Reduction ratio for channel attention.
-
-    Methods:
-        call(input_tensor): Applies the CBAM mechanism to the input tensor.
-        get_config(): Returns the configuration of the layer for serialization.
-        from_config(config): Creates a layer instance from its configuration.
     """
 
     def __init__(self, ratio=8, name=None, **kwargs):
         """
         Initializes the CBAM layer.
-
-        Args:
-            ratio (int): Reduction ratio for channel attention. Default is 8.
-            name (str, optional): Name of the layer. Default is None.
-            **kwargs: Additional keyword arguments for the parent Layer class.
         """
         super(CBAM, self).__init__(name=name, **kwargs)
         self.ratio = ratio
@@ -36,9 +23,6 @@ class CBAM(layers.Layer):
     def build(self, input_shape):
         """
         Builds the layer by initializing its weights and submodules.
-
-        Args:
-            input_shape (TensorShape): Shape of the input tensor.
         """
         filters = input_shape[-1]
 
@@ -50,15 +34,11 @@ class CBAM(layers.Layer):
 
         self.conv = Conv2D(1, kernel_size=7, padding="same", activation="sigmoid")
 
+        self.built = True
+
     def call(self, input_tensor):
         """
         Applies the CBAM mechanism to the input tensor.
-
-        Args:
-            input_tensor (Tensor): Input tensor to the layer.
-
-        Returns:
-            Tensor: Output tensor with enhanced feature representations.
         """
         # Channel attention
         avg_pool = self.global_avg_pool(input_tensor)
@@ -88,10 +68,7 @@ class CBAM(layers.Layer):
 
     def get_config(self):
         """
-        Returns the configuration of the CBAM layer for serialization.
-
-        Returns:
-            dict: Configuration dictionary of the layer.
+        Returns the configuration of the CBAM layer for serialization..
         """
         config = super(CBAM, self).get_config()
         config.update({"ratio": self.ratio})
@@ -101,11 +78,5 @@ class CBAM(layers.Layer):
     def from_config(cls, config):
         """
         Creates a CBAM layer instance from its configuration.
-
-        Args:
-            config (dict): Configuration dictionary.
-
-        Returns:
-            CBAM: A new CBAM layer instance.
         """
         return cls(**config)
