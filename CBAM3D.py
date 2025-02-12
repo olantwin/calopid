@@ -5,6 +5,7 @@ from tensorflow.keras.layers import (Add, Concatenate, Conv2D, Dense,
                                      GlobalMaxPooling2D, Layer, Multiply,
                                      Reshape)
 
+
 class CBAM(layers.Layer):
     """
     Convolutional Block Attention Module (CBAM) layer.
