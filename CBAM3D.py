@@ -1,9 +1,16 @@
 import tensorflow as tf
 from tensorflow.keras import layers
-from tensorflow.keras.layers import (Add, Concatenate, Conv2D, Dense,
-                                     GlobalAveragePooling2D,
-                                     GlobalMaxPooling2D, Layer, Multiply,
-                                     Reshape)
+from tensorflow.keras.layers import (
+    Add,
+    Concatenate,
+    Conv2D,
+    Dense,
+    GlobalAveragePooling2D,
+    GlobalMaxPooling2D,
+    Layer,
+    Multiply,
+    Reshape,
+)
 
 
 class CBAM(layers.Layer):
