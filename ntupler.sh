@@ -22,9 +22,10 @@ if xrdfs $EOSSERVER stat $OUTPUTDIR/$FEATUREFILE; then
 	exit 0
 fi
 
-INDICES=$(seq $(( $ProcId * 10 + 1 )) $(( $ProcId * 10 + 10 )))
-INPUTFILES=$(for i in $INDICES; do echo $OUTPUTDIR/$i/$INPUTFILE; done)
+INDICES=$(seq $(( ProcId * 10 + 1 )) $(( ProcId * 10 + 10 )))
+INPUTFILES=$(for i in $INDICES; do echo $OUTPUTDIR/"$i"/$INPUTFILE; done)
 
+# shellcheck disable=SC2086
 python $WORKDIR/ntuple_creator.py -j 4 --inputfiles $INPUTFILES
 mv features_1000.csv $FEATUREFILE
 
