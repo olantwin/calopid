@@ -18,13 +18,6 @@ repos:
   rev: 6.3.0
   hooks:
   - id: pydocstyle
-- repo: https://github.com/astral-sh/uv-pre-commit
-  # uv version.
-  rev: 0.5.29
-  hooks:
-  # Compile requirements
-  - id: pip-compile
-    args: [requirements.in, -o, requirements.txt]
 - repo: https://github.com/shellcheck-py/shellcheck-py
   rev: v0.10.0.1
   hooks:
