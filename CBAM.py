@@ -3,6 +3,7 @@ This module implements the Convolutional Block Attention Module (CBAM) layer.
 
 CBAM enhances feature representations by applying channel and spatial attention mechanisms.
 """
+
 import tensorflow as tf
 from tensorflow.keras import layers
 from tensorflow.keras.layers import (
