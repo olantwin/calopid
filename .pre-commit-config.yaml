@@ -37,3 +37,12 @@ repos:
   rev: 2.1.1
   hooks:
     - id: bashate
+- repo: https://github.com/nbQA-dev/nbQA
+  rev: 1.9.1
+  hooks:
+    - id: nbqa-ruff
+      args: [--fix, --show-fixes]
+    - id: nbqa-pyupgrade
+      args: ["--py39-plus"]
+    - id: nbqa-isort
+      args: ["--float-to-top", "--profile=black"]
