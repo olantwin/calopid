@@ -1,3 +1,5 @@
+"""Constants for use in other scripts."""
+
 nu_mu_yield = 1.5e4
 nu_tau_yield = 2.8e2
 nu_e_yield = 3.4e3
