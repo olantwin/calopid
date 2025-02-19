@@ -25,7 +25,7 @@ def event_generator(filename, target, le):
             ys = (
                 le.transform(np.abs(batch[target]))
                 if target == "nu_flavour"
-                else np.log(batch[target])
+                else batch[target]
             )
             for i in range(batch["X"].shape[0]):
                 yield (
