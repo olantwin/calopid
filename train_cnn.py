@@ -34,6 +34,7 @@ def event_generator(filename, target, le):
                     ys[i],
                 )
 
+
 def loss(y_true, y_pred):
     return tf.sqrt(tf.keras.ops.mean(((y_pred - y_true) / y_true) ** 2))
 
@@ -104,7 +105,7 @@ def main():
     )
 
     keras.config.enable_unsafe_deserialization()
-    model = load_model(args.model, custom_objects={'loss': loss})
+    model = load_model(args.model, custom_objects={"loss": loss})
 
     reduce_lr = ReduceLROnPlateau(
         monitor="loss", factor=0.5, patience=6, min_lr=1e-6, verbose=1
