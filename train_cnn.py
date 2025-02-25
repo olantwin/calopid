@@ -15,6 +15,7 @@ from tensorflow.keras.callbacks import ReduceLROnPlateau
 from tensorflow.keras.models import load_model
 
 from config import tensor_spec_mufilter, tensor_spec_target
+from losses import normalised_mse, normalised_rmse
 from preprocessing import reshape_data
 
 
@@ -33,10 +34,6 @@ def event_generator(filename, target, le):
                     batch["X_mufilter"].astype(np.float16)[i],
                     ys[i],
                 )
-
-
-def loss(y_true, y_pred):
-    return tf.sqrt(tf.keras.ops.mean(((y_pred - y_true) / y_true) ** 2))
 
 
 def main():
@@ -105,7 +102,10 @@ def main():
     )
 
     keras.config.enable_unsafe_deserialization()
-    model = load_model(args.model, custom_objects={"loss": loss})
+    model = load_model(
+        args.model,
+        custom_objects={"normalised_mse": normalised_mse, "loss": normalised_rmse},
+    )
 
     reduce_lr = ReduceLROnPlateau(
         monitor="loss", factor=0.5, patience=6, min_lr=1e-6, verbose=1
