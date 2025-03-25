@@ -43,7 +43,13 @@ def main():
         help="""Saturation threshold, defaults to digital →1.""",
     )
     parser.add_argument(
-        "--new_geo",
+        "--energy-cut",
+        default=0,
+        type=float,
+        help="""Neutrino energy cut [GeV], defaults to 0.""",
+    )
+    parser.add_argument(
+        "--new-geo",
         action="store_true",
         help="""Use channel mapping etc. for new no-excavation geometry.""",
     )
@@ -271,6 +277,8 @@ def main():
         df = df.Filter("muonic", "Only muonic")
     elif args.hadronic:
         df = df.Filter("non_muonic", "Everything but muonic")
+    if args.energy_cut:
+        df = df.Filter(f"nu_energy >= {args.energy_cut}", "Fiducial volume cut")
     df = (
         df.Define(
             "lepton_energy", "dynamic_cast<ShipMCTrack*>(MCTrack[1])->GetEnergy()"

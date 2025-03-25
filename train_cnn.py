@@ -15,6 +15,7 @@ from tensorflow.keras.callbacks import ReduceLROnPlateau
 from tensorflow.keras.models import load_model
 
 from config import tensor_spec_mufilter, tensor_spec_target
+from losses import normalised_mse, normalised_rmse
 from preprocessing import reshape_data
 
 
@@ -25,7 +26,7 @@ def event_generator(filename, target, le):
             ys = (
                 le.transform(np.abs(batch[target]))
                 if target == "nu_flavour"
-                else np.log(batch[target])
+                else batch[target]
             )
             for i in range(batch["X"].shape[0]):
                 yield (
@@ -101,7 +102,10 @@ def main():
     )
 
     keras.config.enable_unsafe_deserialization()
-    model = load_model(args.model)
+    model = load_model(
+        args.model,
+        custom_objects={"normalised_mse": normalised_mse, "loss": normalised_rmse},
+    )
 
     reduce_lr = ReduceLROnPlateau(
         monitor="loss", factor=0.5, patience=6, min_lr=1e-6, verbose=1
