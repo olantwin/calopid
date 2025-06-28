@@ -12,10 +12,7 @@ import tensorflow as tf
 import uproot
 from sklearn.preprocessing import LabelEncoder
 from tensorflow import keras
-from tensorflow.keras import layers, models
-from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, TensorBoard
-from tensorflow.keras.losses import BinaryFocalCrossentropy
-from tensorflow.keras.metrics import AUC, BinaryAccuracy
+from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau
 from tensorflow.keras.models import load_model
 
 from config import tensor_spec_mufilter, tensor_spec_target
