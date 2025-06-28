@@ -238,6 +238,7 @@ def main():
     plt.savefig(f"confusion_matrix_scaled_{model_name}.png")
     plt.savefig(f"confusion_matrix_scaled_{model_name}.pdf")
 
+
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
     main()
