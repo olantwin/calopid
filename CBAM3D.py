@@ -1,30 +1,38 @@
+"""
+This module implements the Convolutional Block Attention Module (CBAM) layer.
+
+CBAM enhances feature representations by applying channel and spatial attention mechanisms.
+"""
+
 import tensorflow as tf
 from tensorflow.keras import layers
-from tensorflow.keras.layers import (Add, Concatenate, Conv2D, Dense,
-                                     GlobalAveragePooling2D,
-                                     GlobalMaxPooling2D, Layer, Multiply,
-                                     Reshape)
+from tensorflow.keras.layers import (
+    Add,
+    Concatenate,
+    Conv2D,
+    Dense,
+    GlobalAveragePooling2D,
+    GlobalMaxPooling2D,
+    Multiply,
+    Reshape,
+)
 
 
 class CBAM(layers.Layer):
     """
-    Convolutional Block Attention Module (CBAM) layer.
+    Define the Convolutional Block Attention Module (CBAM) layer.
 
-    CBAM sequentially applies channel and spatial attention mechanisms to the input tensor.
-    The layer can enhance the feature representations by focusing on the most informative parts.
+    This layer applies sequential channel and spatial attention mechanisms to
+    enhance feature representations by focusing on the most informative parts.
     """
 
     def __init__(self, ratio=8, name=None, **kwargs):
-        """
-        Initializes the CBAM layer.
-        """
+        """Initialize the CBAM layer with a given attention ratio."""
         super().__init__(**kwargs)
         self.ratio = ratio
 
     def build(self, input_shape):
-        """
-        Builds the layer by initializing its weights and submodules.
-        """
+        """Build the CBAM layer and initialize weights and submodules."""
         filters = input_shape[-1]
 
         self.global_avg_pool = GlobalAveragePooling2D()
@@ -38,9 +46,7 @@ class CBAM(layers.Layer):
         self.built = True
 
     def call(self, input_tensor):
-        """
-        Applies the CBAM mechanism to the input tensor.
-        """
+        """Apply the CBAM mechanism to the input tensor."""
         # Channel attention
         avg_pool = self.global_avg_pool(input_tensor)
         max_pool = self.global_max_pool(input_tensor)
@@ -70,16 +76,12 @@ class CBAM(layers.Layer):
         return x
 
     def get_config(self):
-        """
-        Returns the configuration of the CBAM layer for serialization.
-        """
+        """Return the configuration of the CBAM layer for serialization."""
         config = super(CBAM, self).get_config()
         config.update({"ratio": self.ratio})
         return config
 
     @classmethod
     def from_config(cls, config):
-        """
-        Creates a CBAM layer instance from its configuration.
-        """
+        """Create a CBAM layer instance from its configuration."""
         return cls(**config)
