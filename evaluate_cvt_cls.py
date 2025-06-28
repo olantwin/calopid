@@ -11,12 +11,10 @@ from scipy.optimize import basinhopping
 from sklearn.metrics import (
     ConfusionMatrixDisplay,
     confusion_matrix,
-    roc_auc_score,
-    roc_curve,
 )
 from sklearn.preprocessing import LabelEncoder
 from tensorflow import keras
-from tensorflow.keras import layers, mixed_precision, models
+from tensorflow.keras import mixed_precision
 from tensorflow.keras.models import load_model
 
 from config import (
@@ -239,27 +237,6 @@ def main():
 
     plt.savefig(f"confusion_matrix_scaled_{model_name}.png")
     plt.savefig(f"confusion_matrix_scaled_{model_name}.pdf")
-
-    ### roc_curve ###
-    fig, ax = plt.subplots(figsize=(6, 4))
-    RocCurveDisplay.from_predictions(
-        y_test, y_pred, plot_chance_level=True, ax=ax, figure=fig
-    )
-
-    plt.text(
-        0.785,
-        1.02,
-        "AdvSND",
-        fontweight="bold",
-        fontfamily="sans-serif",
-        fontsize=16,
-        transform=ax.transAxes,
-        usetex=False,
-    )
-
-    plt.savefig(f"ROC_curve_{model_name}.png")
-    plt.savefig(f"ROC_curve_{model_name}.pdf")
-
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
