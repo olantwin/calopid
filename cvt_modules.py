@@ -287,7 +287,7 @@ class ConvAttention(layers.Layer):
         Returns:
             Tensor: Output tensor after applying the attention mechanism.
         """
-        b, _, c, h = *x.shape, self.heads
+        _, _, _, h = *x.shape, self.heads
         if self.last_stage:
             cls_token = x[:, 0]
             x = x[:, 1:]
