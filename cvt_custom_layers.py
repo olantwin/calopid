@@ -1,4 +1,4 @@
-""" Transformer model components including Transformer, RearrangeLayer, and LastStage layers. """
+"""Transformer model components including Transformer, RearrangeLayer, and LastStage layers."""
 
 import tensorflow as tf
 from einops import rearrange
