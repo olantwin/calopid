@@ -1,12 +1,13 @@
-import tensorflow as tf
-from einops import repeat, rearrange
-from tensorflow.keras import layers
-from cvt_modules import ConvAttention, PreLayerNorm, FeedForward
 import numpy as np
+import tensorflow as tf
+from einops import rearrange, repeat
+from tensorflow.keras import layers, mixed_precision
 
-from tensorflow.keras import mixed_precision
-policy = mixed_precision.Policy('mixed_float16')
+from cvt_modules import ConvAttention, FeedForward, PreLayerNorm
+
+policy = mixed_precision.Policy("mixed_float16")
 mixed_precision.set_global_policy(policy)
+
 
 class Transformer(layers.Layer):
     """
@@ -23,7 +24,20 @@ class Transformer(layers.Layer):
         dropout (float): The dropout rate.
         last_stage (bool): Whether this is the last stage of the model.
     """
-    def __init__(self, dim, length, width, depth, heads, dim_head, mlp_dim, dropout=0., last_stage=False, **kwargs):
+
+    def __init__(
+        self,
+        dim,
+        length,
+        width,
+        depth,
+        heads,
+        dim_head,
+        mlp_dim,
+        dropout=0.0,
+        last_stage=False,
+        **kwargs,
+    ):
         """
         Initializes the Transformer layer.
 
@@ -61,11 +75,26 @@ class Transformer(layers.Layer):
             input_shape (tuple): The shape of the input tensor.
         """
         for _ in range(self.depth):
-            self.layers.append([
-                PreLayerNorm(fn=ConvAttention(dim=self.dim, length=self.length, width=self.width, heads=self.heads,
-                                         dim_head=self.dim_head, dropout=self.dropout, last_stage=self.last_stage)),
-                PreLayerNorm(fn=FeedForward(dim=self.dim, hidden_dim=self.mlp_dim, dropout=self.dropout))
-            ])
+            self.layers.append(
+                [
+                    PreLayerNorm(
+                        fn=ConvAttention(
+                            dim=self.dim,
+                            length=self.length,
+                            width=self.width,
+                            heads=self.heads,
+                            dim_head=self.dim_head,
+                            dropout=self.dropout,
+                            last_stage=self.last_stage,
+                        )
+                    ),
+                    PreLayerNorm(
+                        fn=FeedForward(
+                            dim=self.dim, hidden_dim=self.mlp_dim, dropout=self.dropout
+                        )
+                    ),
+                ]
+            )
 
     def call(self, x, training=False):
         """
@@ -93,17 +122,19 @@ class Transformer(layers.Layer):
             dict: The configuration dictionary.
         """
         config = super(Transformer, self).get_config()
-        config.update({
-            'dim': self.dim,
-            'length': self.length,
-            'width': self.width,
-            'depth': self.depth,
-            'heads': self.heads,
-            'dim_head': self.dim_head,
-            'mlp_dim': self.mlp_dim,
-            'dropout': self.dropout,
-            'last_stage': self.last_stage
-        })
+        config.update(
+            {
+                "dim": self.dim,
+                "length": self.length,
+                "width": self.width,
+                "depth": self.depth,
+                "heads": self.heads,
+                "dim_head": self.dim_head,
+                "mlp_dim": self.mlp_dim,
+                "dropout": self.dropout,
+                "last_stage": self.last_stage,
+            }
+        )
         return config
 
     @classmethod
@@ -119,6 +150,7 @@ class Transformer(layers.Layer):
         """
         return cls(**config)
 
+
 class RearrangeLayer(layers.Layer):
     """
     Rearrange class that manipulates tensor dimensions with optional compression.
@@ -129,6 +161,7 @@ class RearrangeLayer(layers.Layer):
         width (int): The width of the spatial dimensions of the tensor.
         compression (bool): Whether to compress the tensor before rearranging.
     """
+
     def __init__(self, dim, length, width, compression=False, **kwargs):
         """
         Initializes the Rearrange layer.
@@ -146,7 +179,7 @@ class RearrangeLayer(layers.Layer):
         self.length = length
         self.width = width
         self.compression = compression
-        
+
     def call(self, x):
         """
         Forward pass of the Rearrange layer.
@@ -160,9 +193,9 @@ class RearrangeLayer(layers.Layer):
             tf.Tensor: The rearranged tensor.
         """
         if self.compression:
-            x = rearrange(x, 'b l w c -> b (l w) c', l=self.length, w=self.width)
+            x = rearrange(x, "b l w c -> b (l w) c", l=self.length, w=self.width)
         else:
-            x = rearrange(x, 'b (l w) c -> b l w c', l=self.length, w=self.width)
+            x = rearrange(x, "b (l w) c -> b l w c", l=self.length, w=self.width)
         return x
 
     def get_config(self):
@@ -173,12 +206,14 @@ class RearrangeLayer(layers.Layer):
             dict: The configuration dictionary.
         """
         config = super(RearrangeLayer, self).get_config()
-        config.update({
-            'dim': self.dim,
-            'length': self.length,
-            'width': self.width,
-            'compression': self.compression,
-        })
+        config.update(
+            {
+                "dim": self.dim,
+                "length": self.length,
+                "width": self.width,
+                "compression": self.compression,
+            }
+        )
         return config
 
     @classmethod
@@ -194,6 +229,7 @@ class RearrangeLayer(layers.Layer):
         """
         return cls(**config)
 
+
 class LastStage(layers.Layer):
     """
     LastStage class that represents the final stage of the model.
@@ -202,6 +238,7 @@ class LastStage(layers.Layer):
         dim (int): The dimension of the input.
         batch (int): The batch size.
     """
+
     def __init__(self, dim, batch_size, **kwargs):
         """
         Initializes the LastStage layer.
@@ -222,7 +259,9 @@ class LastStage(layers.Layer):
         Args:
             input_shape (tf.TensorShape): The shape of the input tensor.
         """
-        self.cls_token = tf.Variable(tf.random.normal([1, 1, self.dim], dtype=tf.float16), trainable=True)
+        self.cls_token = tf.Variable(
+            tf.random.normal([1, 1, self.dim], dtype=tf.float16), trainable=True
+        )
 
     def call(self, x):
         """
@@ -238,7 +277,7 @@ class LastStage(layers.Layer):
         cls_tokens = tf.tile(self.cls_token, [b, 1, 1])
         x = tf.concat([cls_tokens, x], axis=1)
         return x
-    
+
     def get_config(self):
         """
         Returns the configuration of the LastStage layer.
@@ -247,10 +286,7 @@ class LastStage(layers.Layer):
             dict: The configuration dictionary.
         """
         config = super(LastStage, self).get_config()
-        config.update({
-            "dim": self.dim,
-            "batch_size": self.batch_size
-        })
+        config.update({"dim": self.dim, "batch_size": self.batch_size})
         return config
 
     @classmethod
@@ -264,7 +300,6 @@ class LastStage(layers.Layer):
         Returns:
             LastStage: The LastStage layer.
         """
-        batch_size = config.get('batch_size')
-        config['batch_size'] = batch_size
+        batch_size = config.get("batch_size")
+        config["batch_size"] = batch_size
         return cls(**config)
-    

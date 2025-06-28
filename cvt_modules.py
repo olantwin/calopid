@@ -1,5 +1,7 @@
 import tensorflow as tf
-from tensorflow.keras import layers
+from einops import rearrange, repeat
+from tensorflow.keras import layers, mixed_precision
+from tensorflow.keras.activations import gelu
 from tensorflow.keras.layers import (
     Activation,
     BatchNormalization,
@@ -11,13 +13,9 @@ from tensorflow.keras.layers import (
     Lambda,
     LayerNormalization,
 )
-from tensorflow.keras.activations import gelu
-from tensorflow.keras import mixed_precision
 from tensorflow.linalg import einsum
-from einops import rearrange, repeat
 
-from tensorflow.keras import mixed_precision
-policy = mixed_precision.Policy('mixed_float16')
+policy = mixed_precision.Policy("mixed_float16")
 mixed_precision.set_global_policy(policy)
 
 
@@ -28,6 +26,7 @@ class PreLayerNorm(layers.Layer):
     Attributes:
         fn (function): Function to be applied after normalization.
     """
+
     def __init__(self, fn, **kwargs):
         """
         Initializes the PreLayerNorm layer.
@@ -37,11 +36,11 @@ class PreLayerNorm(layers.Layer):
         """
         super().__init__(**kwargs)
         self.fn = fn
-        
+
     def build(self, input_shape):
         """
         Builds the Pre-LayerNorm layer by initializing Layer Normalization.
-        
+
         Args:
             input_shape (TensorShape): Shape of the input tensor.
         """
@@ -50,11 +49,11 @@ class PreLayerNorm(layers.Layer):
     def call(self, x, training=False, **kwargs):
         """
         Forward pass for the Pre-LayerNorm layer.
-        
+
         Args:
             x (Tensor): Input tensor.
             training (bool): Boolean to specify if the call is for training or inference. Default is False.
-        
+
         Returns:
             Tensor: Output tensor after applying layer normalization and the given function.
         """
@@ -64,24 +63,22 @@ class PreLayerNorm(layers.Layer):
     def get_config(self):
         """
         Returns the configuration of the layer.
-        
+
         Returns:
             dict: Dictionary containing layer configuration.
         """
         config = super(PreLayerNorm, self).get_config()
-        config.update({
-            "fn": self.fn
-        })
+        config.update({"fn": self.fn})
         return config
 
     @classmethod
     def from_config(cls, config):
         """
         Creates a layer from its configuration.
-        
+
         Args:
             config (dict): Dictionary containing layer configuration.
-            
+
         Returns:
             PreLayerNorm: Pre-LayerNorm Layer object created from the config.
         """
@@ -99,7 +96,10 @@ class SepConv2d(layers.Layer):
         padding (str): Padding method to use ('valid' or 'same'). Default is 'same'.
         dilation (int or tuple/list of 2 ints): Dilation rate to use for dilated convolution. Default is 1.
     """
-    def __init__(self, filters, kernel_size, stride=1, padding='same', dilation=1, **kwargs):
+
+    def __init__(
+        self, filters, kernel_size, stride=1, padding="same", dilation=1, **kwargs
+    ):
         """
         Initializes the SepConv2d layer.
 
@@ -116,29 +116,31 @@ class SepConv2d(layers.Layer):
         self.stride = stride
         self.padding = padding
         self.dilation = dilation
-        
+
     def build(self, input_shape):
         """
         Builds the Separable Convolutional layer by initializing depthwise and pointwise convolutions.
-        
+
         Args:
             input_shape (TensorShape): Shape of the input tensor.
         """
-        self.depthconv = DepthwiseConv2D(kernel_size=self.kernel_size,
-                                         strides=self.stride,
-                                         padding=self.padding,
-                                         dilation_rate=self.dilation)
+        self.depthconv = DepthwiseConv2D(
+            kernel_size=self.kernel_size,
+            strides=self.stride,
+            padding=self.padding,
+            dilation_rate=self.dilation,
+        )
         self.batchnorm = BatchNormalization()
         self.pointconv = Conv2D(filters=self.filters, kernel_size=1)
-        
+
     def call(self, x, training=False):
         """
         Forward pass for the Separable Convolutional layer.
-        
+
         Args:
             x (Tensor): Input tensor.
             training (bool): Boolean to specify if the call is for training or inference. Default is False.
-        
+
         Returns:
             Tensor: Output tensor after applying depthwise conv, batch normalization, and pointwise conv.
         """
@@ -146,36 +148,38 @@ class SepConv2d(layers.Layer):
         x = self.batchnorm(x, training=training)
         x = self.pointconv(x)
         return x
-        
+
     def get_config(self):
         """
         Returns the configuration of the layer.
-        
+
         Returns:
             dict: Dictionary containing layer configuration.
         """
         config = super(SepConv2d, self).get_config()
-        config.update({
-            "filters": self.filters,
-            "kernel_size": self.kernel_size,
-            "stride": self.stride,
-            "padding": self.padding,
-            "dilation": self.dilation
-        })
+        config.update(
+            {
+                "filters": self.filters,
+                "kernel_size": self.kernel_size,
+                "stride": self.stride,
+                "padding": self.padding,
+                "dilation": self.dilation,
+            }
+        )
         return config
-        
+
     @classmethod
     def from_config(cls, config):
         """
         Creates a layer from its configuration.
-        
+
         Args:
             config (dict): Dictionary containing layer configuration.
-            
+
         Returns:
             SepConv2d: Separable Convolutional Layer object created from the config.
         """
-        return cls(**config)        
+        return cls(**config)
 
 
 class ConvAttention(layers.Layer):
@@ -195,7 +199,22 @@ class ConvAttention(layers.Layer):
         dropout (float): Fraction of the input units to drop. Default is 0.0.
         last_stage (bool): Flag to indicate if this is the last stage. Default is False.
     """
-    def __init__(self, dim, length, width, heads, dim_head, kernel_size=3, q_stride=1, k_stride=1, v_stride=1, dropout=0., last_stage=False, **kwargs):
+
+    def __init__(
+        self,
+        dim,
+        length,
+        width,
+        heads,
+        dim_head,
+        kernel_size=3,
+        q_stride=1,
+        k_stride=1,
+        v_stride=1,
+        dropout=0.0,
+        last_stage=False,
+        **kwargs,
+    ):
         """
         Initialize the ConvAttention layer.
 
@@ -218,7 +237,7 @@ class ConvAttention(layers.Layer):
         self.length = length
         self.width = width
         self.heads = heads
-        self.scale = dim_head ** -0.5
+        self.scale = dim_head**-0.5
         self.inner_dim = dim_head * heads
         self.project_out = not (heads == 1 and dim_head == dim)
         self.kernel_size = kernel_size
@@ -234,18 +253,32 @@ class ConvAttention(layers.Layer):
         Args:
             input_shape (TensorShape): Shape of the input tensor.
         """
-        self.to_q = SepConv2d(filters=self.dim, kernel_size=self.kernel_size, stride=self.q_stride, padding='same')
-        self.to_k = SepConv2d(filters=self.dim, kernel_size=self.kernel_size, stride=self.k_stride, padding='same')
-        self.to_v = SepConv2d(filters=self.dim, kernel_size=self.kernel_size, stride=self.v_stride, padding='same')
+        self.to_q = SepConv2d(
+            filters=self.dim,
+            kernel_size=self.kernel_size,
+            stride=self.q_stride,
+            padding="same",
+        )
+        self.to_k = SepConv2d(
+            filters=self.dim,
+            kernel_size=self.kernel_size,
+            stride=self.k_stride,
+            padding="same",
+        )
+        self.to_v = SepConv2d(
+            filters=self.dim,
+            kernel_size=self.kernel_size,
+            stride=self.v_stride,
+            padding="same",
+        )
 
         if self.project_out:
-            self.to_out = tf.keras.Sequential([
-                layers.Dense(self.dim),
-                layers.Dropout(self.dropout_rate)
-            ])
+            self.to_out = tf.keras.Sequential(
+                [layers.Dense(self.dim), layers.Dropout(self.dropout_rate)]
+            )
         else:
             self.to_out = tf.keras.layers.Lambda(lambda x: x)
-        
+
     def call(self, x, training=False):
         """
         Apply the ConvAttention mechanism.
@@ -261,30 +294,32 @@ class ConvAttention(layers.Layer):
         if self.last_stage:
             cls_token = x[:, 0]
             x = x[:, 1:]
-            cls_token = rearrange(tf.expand_dims(cls_token, axis=1), 'b c (h d) -> b h c d', h=h)
-        x = rearrange(x, 'b (l w) c -> b l w c', l=self.length, w=self.width)
-        
+            cls_token = rearrange(
+                tf.expand_dims(cls_token, axis=1), "b c (h d) -> b h c d", h=h
+            )
+        x = rearrange(x, "b (l w) c -> b l w c", l=self.length, w=self.width)
+
         q = self.to_q(x, training=training)
-        q = rearrange(q, 'b l w (h d) -> b h (l w) d', h=h)
+        q = rearrange(q, "b l w (h d) -> b h (l w) d", h=h)
 
         v = self.to_v(x, training=training)
-        v = rearrange(v, 'b l w (h d) -> b h (l w) d', h=h)
+        v = rearrange(v, "b l w (h d) -> b h (l w) d", h=h)
 
         k = self.to_k(x, training=training)
-        k = rearrange(k, 'b l w (h d) -> b h (l w) d', h=h)
+        k = rearrange(k, "b l w (h d) -> b h (l w) d", h=h)
 
         if self.last_stage:
             q = tf.concat((cls_token, q), axis=2)
             v = tf.concat((cls_token, v), axis=2)
             k = tf.concat((cls_token, k), axis=2)
 
-        dots = einsum('b h i d, b h j d -> b h i j', q, k) * self.scale
+        dots = einsum("b h i d, b h j d -> b h i j", q, k) * self.scale
 
         attn = tf.nn.softmax(dots, axis=-1)
 
-        out = einsum('b h i j, b h j d -> b h i d', attn, v)
-        out = rearrange(out, 'b h c d -> b c (h d)')
-        out =  self.to_out(out)
+        out = einsum("b h i j, b h j d -> b h i d", attn, v)
+        out = rearrange(out, "b h c d -> b c (h d)")
+        out = self.to_out(out)
         return out
 
     def get_config(self):
@@ -295,21 +330,23 @@ class ConvAttention(layers.Layer):
             dict: Dictionary containing the configuration parameters.
         """
         config = super(ConvAttention, self).get_config()
-        config.update({
-            "dim": self.dim,
-            "last_stage": self.last_stage,
-            "length": self.length,
-            "width": self.width,
-            "heads": self.heads,
-            "scale": self.scale,
-            "inner_dim": self.inner_dim,
-            "project_out": self.project_out,
-            "kernel_size": self.kernel_size,
-            "q_stride": self.q_stride,
-            "v_stride": self.v_stride,
-            "k_stride": self.k_stride,
-            "dropout_rate": self.dropout_rate
-        })
+        config.update(
+            {
+                "dim": self.dim,
+                "last_stage": self.last_stage,
+                "length": self.length,
+                "width": self.width,
+                "heads": self.heads,
+                "scale": self.scale,
+                "inner_dim": self.inner_dim,
+                "project_out": self.project_out,
+                "kernel_size": self.kernel_size,
+                "q_stride": self.q_stride,
+                "v_stride": self.v_stride,
+                "k_stride": self.k_stride,
+                "dropout_rate": self.dropout_rate,
+            }
+        )
         return config
 
     @classmethod
@@ -335,7 +372,8 @@ class FeedForward(layers.Layer):
         hidden_dim (int): Dimensionality of the hidden layer.
         dropout (float): Fraction of the input units to drop. Default is 0.0.
     """
-    def __init__(self, dim, hidden_dim, dropout=0., **kwargs):
+
+    def __init__(self, dim, hidden_dim, dropout=0.0, **kwargs):
         """
         Initializes the FeedForward layer.
 
@@ -348,16 +386,16 @@ class FeedForward(layers.Layer):
         self.dim = dim
         self.hidden_dim = hidden_dim
         self.dropout_rate = dropout
-        
+
     def build(self, input_shape):
         """
         Builds the FeedForward layer by initializing dense layers, activation, and dropout.
-        
+
         Args:
             input_shape (TensorShape): Shape of the input tensor.
         """
         self.dense1 = Dense(self.hidden_dim)
-        self.activation = Activation('gelu')
+        self.activation = Activation("gelu")
         self.dropout1 = Dropout(self.dropout_rate)
         self.dense2 = Dense(self.dim)
         self.dropout2 = Dropout(self.dropout_rate)
@@ -365,11 +403,11 @@ class FeedForward(layers.Layer):
     def call(self, x, training=False, **kwargs):
         """
         Forward pass for the FeedForward layer.
-        
+
         Args:
             x (Tensor): Input tensor.
             training (bool): Boolean to specify if the call is for training or inference. Default is False.
-        
+
         Returns:
             Tensor: Output tensor after applying dense layers, activation, and dropout.
         """
@@ -379,30 +417,32 @@ class FeedForward(layers.Layer):
         x = self.dense2(x)
         x = self.dropout2(x, training=training)
         return x
-        
+
     def get_config(self):
         """
         Returns the configuration of the layer.
-        
+
         Returns:
             dict: Dictionary containing layer configuration.
         """
         config = super(FeedForward, self).get_config()
-        config.update({
-            "dim": self.dim,
-            "hidden_dim": self.hidden_dim,
-            "dropout_rate": self.dropout_rate
-        })
+        config.update(
+            {
+                "dim": self.dim,
+                "hidden_dim": self.hidden_dim,
+                "dropout_rate": self.dropout_rate,
+            }
+        )
         return config
 
     @classmethod
     def from_config(cls, config):
         """
         Creates a layer from its configuration.
-        
+
         Args:
             config (dict): Dictionary containing layer configuration.
-            
+
         Returns:
             FeedForward: FeedForward Layer object created from the config.
         """

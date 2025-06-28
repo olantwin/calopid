@@ -7,16 +7,16 @@ import logging
 
 import numpy as np
 import pandas as pd
+import tensorflow
 import tensorflow as tf
 import uproot
 from sklearn.preprocessing import LabelEncoder
-import tensorflow
 from tensorflow import keras
 from tensorflow.keras import layers, models
 from tensorflow.keras.callbacks import EarlyStopping, ReduceLROnPlateau, TensorBoard
-from tensorflow.keras.models import load_model
 from tensorflow.keras.losses import BinaryFocalCrossentropy
-from tensorflow.keras.metrics import BinaryAccuracy, AUC
+from tensorflow.keras.metrics import AUC, BinaryAccuracy
+from tensorflow.keras.models import load_model
 
 from config import tensor_spec_mufilter, tensor_spec_target
 from preprocessing import reshape_data
@@ -103,7 +103,7 @@ def main():
         )
         .map(reshape_data)
         .apply(tf.data.experimental.assert_cardinality(events.num_entries))
-        #.take((n_events//args.batch_size)*args.batch_size)
+        # .take((n_events//args.batch_size)*args.batch_size)
         .take(256)
         .batch(args.batch_size)
     )
@@ -112,20 +112,20 @@ def main():
     model = load_model(args.model)
 
     model.compile(
-    optimizer="Adam",
-    loss=tensorflow.keras.losses.BinaryFocalCrossentropy(from_logits=True),
-    metrics=[
-        tensorflow.keras.metrics.BinaryAccuracy(name="acc", threshold=0.5),
-        tensorflow.keras.metrics.AUC(from_logits=True),
-    ],
+        optimizer="Adam",
+        loss=tensorflow.keras.losses.BinaryFocalCrossentropy(from_logits=True),
+        metrics=[
+            tensorflow.keras.metrics.BinaryAccuracy(name="acc", threshold=0.5),
+            tensorflow.keras.metrics.AUC(from_logits=True),
+        ],
     )
-    
+
     reduce_lr = ReduceLROnPlateau(
         monitor="loss", factor=0.5, patience=6, min_lr=1e-6, verbose=1
     )
 
     early_stopping = EarlyStopping(
-        monitor='loss', patience=18, verbose=1, restore_best_weights=True
+        monitor="loss", patience=18, verbose=1, restore_best_weights=True
     )
 
     fit_result = model.fit(
@@ -140,6 +140,7 @@ def main():
     model.save(f"{model_name}_n{n_events}_b{batch_size}_e{epochs}.keras")
     history = pd.DataFrame(fit_result.history)
     history.to_csv(f"history_{model_name}_n{n_events}_b{batch_size}_e{epochs}.csv")
+
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
