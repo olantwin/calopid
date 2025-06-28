@@ -1,4 +1,4 @@
-""" Custom layers for CVT model including PreLayerNorm, SepConv2d, ConvAttention, and FeedForward. """
+"""Custom layers for CVT model including PreLayerNorm, SepConv2d, ConvAttention, and FeedForward."""
 
 import tensorflow as tf
 from einops import rearrange
