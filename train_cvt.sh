@@ -3,7 +3,7 @@
 # shellcheck disable=SC1091
 . /cvmfs/sft.cern.ch/lcg/views/LCG_106a/x86_64-el9-gcc11-opt/setup.sh
 
-export PYTHONPATH=/eos/user/g/grassim/.local/lib/python3.11/site-packages:$PYTHONPATH
+export PYTHONPATH=/eos/user/g/grassim/.local/lib/python3.11/site-packages:"$PYTHONPATH"
 
 DATAPATH=/eos/user/g/grassim/SWAN_projects/noexcave/root_files/
 MODELPATH=/eos/user/g/grassim/SWAN_projects/noexcave/model_zoo/
