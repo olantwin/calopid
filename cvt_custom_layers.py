@@ -1,3 +1,7 @@
+"""
+Transformer model components including Transformer, RearrangeLayer, and LastStage layers.
+"""
+
 import tensorflow as tf
 from einops import rearrange
 from tensorflow.keras import layers, mixed_precision
@@ -10,18 +14,18 @@ mixed_precision.set_global_policy(policy)
 
 class Transformer(layers.Layer):
     """
-    Transformer class that represents a transformer model layer with multiple attention and feed-forward layers.
+    Implement a Transformer with multiple layers of attention and feed-forward blocks.
 
     Attributes:
-        dim (int): The dimension of the input.
-        length (int): The length of the input.
-        width (int): The width of the input.
-        depth (int): The number of layers in the transformer.
-        heads (int): The number of attention heads.
-        dim_head (int): The dimension of each attention head.
-        mlp_dim (int): The dimension of the feed-forward layer.
-        dropout (float): The dropout rate.
-        last_stage (bool): Whether this is the last stage of the model.
+        dim (int): Input dimension.
+        length (int): Input length.
+        width (int): Input width.
+        depth (int): Number of Transformer layers.
+        heads (int): Number of attention heads.
+        dim_head (int): Dimension per attention head.
+        mlp_dim (int): Hidden dimension of feed-forward layer.
+        dropout (float): Dropout rate.
+        last_stage (bool): Whether this is the last stage.
     """
 
     def __init__(
@@ -38,18 +42,18 @@ class Transformer(layers.Layer):
         **kwargs,
     ):
         """
-        Initializes the Transformer layer.
+        Initialize the Transformer layer.
 
         Args:
-            dim (int): The dimension of the input.
-            length (int): The length of the input.
-            width (int): The width of the input.
-            depth (int): The number of layers in the transformer.
-            heads (int): The number of attention heads.
-            dim_head (int): The dimension of each attention head.
-            mlp_dim (int): The dimension of the feed-forward layer.
-            dropout (float, optional): The dropout rate. Defaults to 0.
-            last_stage (bool, optional): Whether this is the last stage of the model. Defaults to False.
+            dim (int): Input dimension.
+            length (int): Input length.
+            width (int): Input width.
+            depth (int): Number of Transformer layers.
+            heads (int): Number of attention heads.
+            dim_head (int): Dimension per attention head.
+            mlp_dim (int): Hidden dimension of feed-forward layer.
+            dropout (float, optional): Dropout rate. Defaults to 0.0.
+            last_stage (bool, optional): Whether this is the last stage. Defaults to False.
             **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
@@ -67,11 +71,10 @@ class Transformer(layers.Layer):
 
     def build(self, input_shape):
         """
-        Initialize all necessary weights and layers for the Transformer layer.
-        This is called when the layer is added to the model and the input shape is known.
+        Build the Transformer layers.
 
         Args:
-            input_shape (tuple): The shape of the input tensor.
+            input_shape (tuple): Shape of input tensor.
         """
         for _ in range(self.depth):
             self.layers.append(
@@ -97,14 +100,14 @@ class Transformer(layers.Layer):
 
     def call(self, x, training=False):
         """
-        Forward pass of the Transformer layer.
+        Perform forward pass through the Transformer layers.
 
         Args:
-            x (tf.Tensor): The input tensor.
-            training (bool, optional): Whether the layer should behave in training mode. Defaults to False.
+            x (tf.Tensor): Input tensor.
+            training (bool, optional): Whether layer is in training mode. Defaults to False.
 
         Returns:
-            tf.Tensor: The output tensor after applying attention and feed-forward layers.
+            tf.Tensor: Output tensor after attention and feed-forward layers.
         """
         for attn, ff in self.layers:
             # Apply attention and residual connection
@@ -115,10 +118,10 @@ class Transformer(layers.Layer):
 
     def get_config(self):
         """
-        Returns the configuration of the Transformer layer.
+        Return configuration of the Transformer layer.
 
         Returns:
-            dict: The configuration dictionary.
+            dict: Configuration dictionary.
         """
         config = super(Transformer, self).get_config()
         config.update(
@@ -139,38 +142,37 @@ class Transformer(layers.Layer):
     @classmethod
     def from_config(cls, config):
         """
-        Creates a Transformer layer from the given configuration.
+        Create a Transformer layer from configuration.
 
         Args:
-            config (dict): The configuration dictionary.
+            config (dict): Configuration dictionary.
 
         Returns:
-            Transformer: The Transformer layer.
+            Transformer: Instantiated Transformer layer.
         """
         return cls(**config)
 
 
 class RearrangeLayer(layers.Layer):
     """
-    Rearrange class that manipulates tensor dimensions with optional compression.
+    Rearrange tensor dimensions with optional compression.
 
     Attributes:
-        dim (int): The dimensionality of the input tensor's channels.
-        length (int): The length of the spatial dimensions of the tensor.
-        width (int): The width of the spatial dimensions of the tensor.
-        compression (bool): Whether to compress the tensor before rearranging.
+        dim (int): Channel dimension of input tensor.
+        length (int): Spatial length dimension.
+        width (int): Spatial width dimension.
+        compression (bool): Whether to compress tensor before rearranging.
     """
 
     def __init__(self, dim, length, width, compression=False, **kwargs):
         """
-        Initializes the Rearrange layer.
+        Initialize the Rearrange layer.
 
         Args:
-            dim (int): The dimensionality of the input tensor's channels.
-            length (int): The length of the spatial dimensions of the tensor.
-            width (int): The width of the spatial dimensions of the tensor.
-            compression (bool, optional): Whether to compress the tensor before rearranging.
-                Defaults to False.
+            dim (int): Channel dimension of input tensor.
+            length (int): Spatial length dimension.
+            width (int): Spatial width dimension.
+            compression (bool, optional): Whether to compress tensor. Defaults to False.
             **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
@@ -181,15 +183,13 @@ class RearrangeLayer(layers.Layer):
 
     def call(self, x):
         """
-        Forward pass of the Rearrange layer.
-
-        Rearranges the input tensor dimensions with optional compression.
+        Rearrange the input tensor dimensions.
 
         Args:
-            x (tf.Tensor): The input tensor to rearrange.
+            x (tf.Tensor): Input tensor.
 
         Returns:
-            tf.Tensor: The rearranged tensor.
+            tf.Tensor: Rearranged tensor.
         """
         if self.compression:
             x = rearrange(x, "b l w c -> b (l w) c", l=self.length, w=self.width)
@@ -199,10 +199,10 @@ class RearrangeLayer(layers.Layer):
 
     def get_config(self):
         """
-        Returns the configuration of the Rearrange layer.
+        Return configuration of the Rearrange layer.
 
         Returns:
-            dict: The configuration dictionary.
+            dict: Configuration dictionary.
         """
         config = super(RearrangeLayer, self).get_config()
         config.update(
@@ -218,33 +218,33 @@ class RearrangeLayer(layers.Layer):
     @classmethod
     def from_config(cls, config):
         """
-        Creates a Rearrange layer from the given configuration.
+        Create a Rearrange layer from configuration.
 
         Args:
-            config (dict): The configuration dictionary.
+            config (dict): Configuration dictionary.
 
         Returns:
-            Rearrange: An instance of the Rearrange layer.
+            RearrangeLayer: Instantiated Rearrange layer.
         """
         return cls(**config)
 
 
 class LastStage(layers.Layer):
     """
-    LastStage class that represents the final stage of the model.
+    Implement the last stage of the model with class token addition.
 
     Attributes:
-        dim (int): The dimension of the input.
-        batch (int): The batch size.
+        dim (int): Dimension of input tensor.
+        batch_size (int): Batch size.
     """
 
     def __init__(self, dim, batch_size, **kwargs):
         """
-        Initializes the LastStage layer.
+        Initialize the LastStage layer.
 
         Args:
-            dim (int): The dimension of the input.
-            batch_size (int): The batch size.
+            dim (int): Dimension of input tensor.
+            batch_size (int): Batch size.
             **kwargs: Additional keyword arguments.
         """
         super().__init__(**kwargs)
@@ -253,10 +253,10 @@ class LastStage(layers.Layer):
 
     def build(self, input_shape):
         """
-        Builds the LastStage layer.
+        Build the LastStage layer by creating class token variable.
 
         Args:
-            input_shape (tf.TensorShape): The shape of the input tensor.
+            input_shape (tf.TensorShape): Shape of input tensor.
         """
         self.cls_token = tf.Variable(
             tf.random.normal([1, 1, self.dim], dtype=tf.float16), trainable=True
@@ -264,13 +264,13 @@ class LastStage(layers.Layer):
 
     def call(self, x):
         """
-        Forward pass of the LastStage layer.
+        Append class token to the input tensor.
 
         Args:
-            x (tf.Tensor): The input tensor.
+            x (tf.Tensor): Input tensor.
 
         Returns:
-            tf.Tensor: The output tensor with the class token appended.
+            tf.Tensor: Tensor with class token prepended.
         """
         b = self.batch_size
         cls_tokens = tf.tile(self.cls_token, [b, 1, 1])
@@ -279,10 +279,10 @@ class LastStage(layers.Layer):
 
     def get_config(self):
         """
-        Returns the configuration of the LastStage layer.
+        Return configuration of the LastStage layer.
 
         Returns:
-            dict: The configuration dictionary.
+            dict: Configuration dictionary.
         """
         config = super(LastStage, self).get_config()
         config.update({"dim": self.dim, "batch_size": self.batch_size})
@@ -291,13 +291,13 @@ class LastStage(layers.Layer):
     @classmethod
     def from_config(cls, config):
         """
-        Creates a LastStage layer from the given configuration.
+        Create a LastStage layer from configuration.
 
         Args:
-            config (dict): The configuration dictionary.
+            config (dict): Configuration dictionary.
 
         Returns:
-            LastStage: The LastStage layer.
+            LastStage: Instantiated LastStage layer.
         """
         batch_size = config.get("batch_size")
         config["batch_size"] = batch_size
