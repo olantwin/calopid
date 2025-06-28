@@ -5,15 +5,11 @@ import logging
 
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
-import tensorflow
 import tensorflow as tf
 import uproot
 from scipy.optimize import basinhopping
 from sklearn.metrics import (
     ConfusionMatrixDisplay,
-    accuracy_score,
-    classification_report,
     confusion_matrix,
     roc_auc_score,
     roc_curve,
