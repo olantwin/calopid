@@ -1,3 +1,7 @@
+"""
+Custom layers for CVT model including PreLayerNorm, SepConv2d, ConvAttention, and FeedForward.
+"""
+
 import tensorflow as tf
 from einops import rearrange
 from tensorflow.keras import layers, mixed_precision
@@ -18,7 +22,7 @@ mixed_precision.set_global_policy(policy)
 
 class PreLayerNorm(layers.Layer):
     """
-    Pre-LayerNorm layer: Applies Layer Normalization before passing input to the given function.
+    Apply Layer Normalization before passing input to the given function.
 
     Attributes:
         fn (function): Function to be applied after normalization.
@@ -26,7 +30,7 @@ class PreLayerNorm(layers.Layer):
 
     def __init__(self, fn, **kwargs):
         """
-        Initializes the PreLayerNorm layer.
+        Initialize the PreLayerNorm layer.
 
         Args:
             fn (function): Function to be applied after normalization.
@@ -36,7 +40,7 @@ class PreLayerNorm(layers.Layer):
 
     def build(self, input_shape):
         """
-        Builds the Pre-LayerNorm layer by initializing Layer Normalization.
+        Build the PreLayerNorm layer by initializing Layer Normalization.
 
         Args:
             input_shape (TensorShape): Shape of the input tensor.
@@ -45,21 +49,21 @@ class PreLayerNorm(layers.Layer):
 
     def call(self, x, training=False, **kwargs):
         """
-        Forward pass for the Pre-LayerNorm layer.
+        Perform forward pass for the PreLayerNorm layer.
 
         Args:
             x (Tensor): Input tensor.
-            training (bool): Boolean to specify if the call is for training or inference. Default is False.
+            training (bool): Specify if call is for training or inference. Default is False.
 
         Returns:
-            Tensor: Output tensor after applying layer normalization and the given function.
+            Tensor: Output tensor after applying normalization and the given function.
         """
         x = self.norm(x)
         return self.fn(x, training=training, **kwargs)
 
     def get_config(self):
         """
-        Returns the configuration of the layer.
+        Return the configuration of the layer.
 
         Returns:
             dict: Dictionary containing layer configuration.
@@ -71,41 +75,41 @@ class PreLayerNorm(layers.Layer):
     @classmethod
     def from_config(cls, config):
         """
-        Creates a layer from its configuration.
+        Create a layer from its configuration.
 
         Args:
             config (dict): Dictionary containing layer configuration.
 
         Returns:
-            PreLayerNorm: Pre-LayerNorm Layer object created from the config.
+            PreLayerNorm: Layer object created from the config.
         """
         return cls(**config)
 
 
 class SepConv2d(layers.Layer):
     """
-    Separable Convolutional Layer: Depthwise convolution followed by a pointwise convolution.
+    Implement separable convolution: depthwise conv followed by pointwise conv.
 
     Attributes:
-        filters (int): Number of output filters in the convolution.
-        kernel_size (int or tuple/list of 2 ints): Dimensions of the convolution window.
-        stride (int or tuple/list of 2 ints): Strides of the convolution. Default is 1.
-        padding (str): Padding method to use ('valid' or 'same'). Default is 'same'.
-        dilation (int or tuple/list of 2 ints): Dilation rate to use for dilated convolution. Default is 1.
+        filters (int): Number of output filters.
+        kernel_size (int or tuple): Convolution window size.
+        stride (int or tuple): Stride size.
+        padding (str): Padding method ('valid' or 'same').
+        dilation (int or tuple): Dilation rate.
     """
 
     def __init__(
         self, filters, kernel_size, stride=1, padding="same", dilation=1, **kwargs
     ):
         """
-        Initializes the SepConv2d layer.
+        Initialize the SepConv2d layer.
 
         Args:
-            filters (int): Number of output filters in the convolution.
-            kernel_size (int or tuple/list of 2 ints): Dimensions of the convolution window.
-            stride (int or tuple/list of 2 ints): Strides of the convolution.
-            padding (str): Padding method to use ('valid' or 'same').
-            dilation (int or tuple/list of 2 ints): Dilation rate to use for dilated convolution.
+            filters (int): Number of output filters.
+            kernel_size (int or tuple): Convolution window size.
+            stride (int or tuple): Stride size.
+            padding (str): Padding method.
+            dilation (int or tuple): Dilation rate.
         """
         super().__init__(**kwargs)
         self.filters = filters
@@ -116,7 +120,7 @@ class SepConv2d(layers.Layer):
 
     def build(self, input_shape):
         """
-        Builds the Separable Convolutional layer by initializing depthwise and pointwise convolutions.
+        Build the separable convolution layer components.
 
         Args:
             input_shape (TensorShape): Shape of the input tensor.
@@ -132,14 +136,14 @@ class SepConv2d(layers.Layer):
 
     def call(self, x, training=False):
         """
-        Forward pass for the Separable Convolutional layer.
+        Perform forward pass for the SepConv2d layer.
 
         Args:
             x (Tensor): Input tensor.
-            training (bool): Boolean to specify if the call is for training or inference. Default is False.
+            training (bool): Specify training mode. Default is False.
 
         Returns:
-            Tensor: Output tensor after applying depthwise conv, batch normalization, and pointwise conv.
+            Tensor: Output tensor after depthwise conv, batch norm, and pointwise conv.
         """
         x = self.depthconv(x)
         x = self.batchnorm(x, training=training)
@@ -148,7 +152,7 @@ class SepConv2d(layers.Layer):
 
     def get_config(self):
         """
-        Returns the configuration of the layer.
+        Return the configuration of the layer.
 
         Returns:
             dict: Dictionary containing layer configuration.
@@ -168,33 +172,33 @@ class SepConv2d(layers.Layer):
     @classmethod
     def from_config(cls, config):
         """
-        Creates a layer from its configuration.
+        Create a layer from its configuration.
 
         Args:
             config (dict): Dictionary containing layer configuration.
 
         Returns:
-            SepConv2d: Separable Convolutional Layer object created from the config.
+            SepConv2d: Layer object created from the config.
         """
         return cls(**config)
 
 
 class ConvAttention(layers.Layer):
     """
-    Convolutional Attention Layer: Applies attention mechanism with separable convolutions.
+    Implement convolutional attention mechanism using separable convolutions.
 
     Attributes:
-        dim (int): Dimensionality of the output space.
-        length (int): Length of the input sequence.
-        width (int): Width of the input sequence.
+        dim (int): Output dimensionality.
+        length (int): Input length dimension.
+        width (int): Input width dimension.
         heads (int): Number of attention heads.
-        dim_head (int): Dimensionality of each attention head.
-        kernel_size (int): Kernel size of the convolutions. Default is 3.
-        q_stride (int): Stride for the query convolution. Default is 1.
-        k_stride (int): Stride for the key convolution. Default is 1.
-        v_stride (int): Stride for the value convolution. Default is 1.
-        dropout (float): Fraction of the input units to drop. Default is 0.0.
-        last_stage (bool): Flag to indicate if this is the last stage. Default is False.
+        dim_head (int): Dimension per attention head.
+        kernel_size (int): Kernel size of convolutions.
+        q_stride (int): Stride for query conv.
+        k_stride (int): Stride for key conv.
+        v_stride (int): Stride for value conv.
+        dropout (float): Dropout rate.
+        last_stage (bool): Whether this is the last stage.
     """
 
     def __init__(
@@ -216,17 +220,17 @@ class ConvAttention(layers.Layer):
         Initialize the ConvAttention layer.
 
         Args:
-            dim (int): Dimensionality of the output space.
-            length (int): Length of the input sequence.
-            width (int): Width of the input sequence.
+            dim (int): Output dimensionality.
+            length (int): Input length.
+            width (int): Input width.
             heads (int): Number of attention heads.
-            dim_head (int): Dimensionality of each attention head.
-            kernel_size (int, optional): Kernel size of the convolutions. Default is 3.
-            q_stride (int, optional): Stride for the query convolution. Default is 1.
-            k_stride (int, optional): Stride for the key convolution. Default is 1.
-            v_stride (int, optional): Stride for the value convolution. Default is 1.
-            dropout (float, optional): Fraction of the input units to drop. Default is 0.0.
-            last_stage (bool, optional): Flag to indicate if this is the last stage. Default is False.
+            dim_head (int): Dimension per attention head.
+            kernel_size (int, optional): Kernel size. Default 3.
+            q_stride (int, optional): Query stride. Default 1.
+            k_stride (int, optional): Key stride. Default 1.
+            v_stride (int, optional): Value stride. Default 1.
+            dropout (float, optional): Dropout rate. Default 0.0.
+            last_stage (bool, optional): If last stage. Default False.
         """
         super().__init__(**kwargs)
         self.dim = dim
@@ -245,7 +249,7 @@ class ConvAttention(layers.Layer):
 
     def build(self, input_shape):
         """
-        Build the ConvAttention layer.
+        Build the ConvAttention layer components.
 
         Args:
             input_shape (TensorShape): Shape of the input tensor.
@@ -278,14 +282,14 @@ class ConvAttention(layers.Layer):
 
     def call(self, x, training=False):
         """
-        Apply the ConvAttention mechanism.
+        Apply the convolutional attention mechanism.
 
         Args:
             x (Tensor): Input tensor.
-            training (bool, optional): Whether the layer is in training mode. Default is False.
+            training (bool, optional): Training mode flag. Default False.
 
         Returns:
-            Tensor: Output tensor after applying the attention mechanism.
+            Tensor: Output tensor after attention.
         """
         _, _, _, h = *x.shape, self.heads
         if self.last_stage:
@@ -321,10 +325,10 @@ class ConvAttention(layers.Layer):
 
     def get_config(self):
         """
-        Returns the configuration of the ConvAttention layer.
+        Return the configuration of the ConvAttention layer.
 
         Returns:
-            dict: Dictionary containing the configuration parameters.
+            dict: Configuration parameters.
         """
         config = super(ConvAttention, self).get_config()
         config.update(
@@ -349,35 +353,35 @@ class ConvAttention(layers.Layer):
     @classmethod
     def from_config(cls, config):
         """
-        Creates an instance of ConvAttention from the given configuration.
+        Create a ConvAttention layer from its configuration.
 
         Args:
-            config (dict): Dictionary containing the configuration parameters.
+            config (dict): Configuration parameters.
 
         Returns:
-            ConvAttention: An instance of the ConvAttention class.
+            ConvAttention: Layer object created from the config.
         """
         return cls(**config)
 
 
 class FeedForward(layers.Layer):
     """
-    FeedForward Layer: Applies dense layers with GELU activation and dropout.
+    Implement feed-forward network with GELU activation and dropout.
 
     Attributes:
-        dim (int): Dimensionality of the output space.
-        hidden_dim (int): Dimensionality of the hidden layer.
-        dropout (float): Fraction of the input units to drop. Default is 0.0.
+        dim (int): Output dimensionality.
+        hidden_dim (int): Hidden layer dimensionality.
+        dropout (float): Dropout rate.
     """
 
     def __init__(self, dim, hidden_dim, dropout=0.0, **kwargs):
         """
-        Initializes the FeedForward layer.
+        Initialize the FeedForward layer.
 
         Args:
-            dim (int): Dimensionality of the output space.
-            hidden_dim (int): Dimensionality of the hidden layer.
-            dropout (float): Fraction of the input units to drop. Default is 0.0.
+            dim (int): Output dimensionality.
+            hidden_dim (int): Hidden layer dimensionality.
+            dropout (float): Dropout rate.
         """
         super().__init__(**kwargs)
         self.dim = dim
@@ -386,10 +390,10 @@ class FeedForward(layers.Layer):
 
     def build(self, input_shape):
         """
-        Builds the FeedForward layer by initializing dense layers, activation, and dropout.
+        Build the feed-forward network components.
 
         Args:
-            input_shape (TensorShape): Shape of the input tensor.
+            input_shape (TensorShape): Shape of input tensor.
         """
         self.dense1 = Dense(self.hidden_dim)
         self.activation = Activation("gelu")
@@ -399,14 +403,14 @@ class FeedForward(layers.Layer):
 
     def call(self, x, training=False, **kwargs):
         """
-        Forward pass for the FeedForward layer.
+        Perform forward pass for the FeedForward layer.
 
         Args:
             x (Tensor): Input tensor.
-            training (bool): Boolean to specify if the call is for training or inference. Default is False.
+            training (bool): Specify training mode. Default False.
 
         Returns:
-            Tensor: Output tensor after applying dense layers, activation, and dropout.
+            Tensor: Output tensor after feed-forward network.
         """
         x = self.dense1(x)
         x = self.activation(x)
@@ -417,10 +421,10 @@ class FeedForward(layers.Layer):
 
     def get_config(self):
         """
-        Returns the configuration of the layer.
+        Return the configuration of the FeedForward layer.
 
         Returns:
-            dict: Dictionary containing layer configuration.
+            dict: Layer configuration.
         """
         config = super(FeedForward, self).get_config()
         config.update(
@@ -435,12 +439,12 @@ class FeedForward(layers.Layer):
     @classmethod
     def from_config(cls, config):
         """
-        Creates a layer from its configuration.
+        Create a FeedForward layer from its configuration.
 
         Args:
-            config (dict): Dictionary containing layer configuration.
+            config (dict): Layer configuration.
 
         Returns:
-            FeedForward: FeedForward Layer object created from the config.
+            FeedForward: Layer object created from the config.
         """
         return cls(**config)
