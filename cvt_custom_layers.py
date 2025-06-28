@@ -1,6 +1,5 @@
-import numpy as np
 import tensorflow as tf
-from einops import rearrange, repeat
+from einops import rearrange
 from tensorflow.keras import layers, mixed_precision
 
 from cvt_modules import ConvAttention, FeedForward, PreLayerNorm
