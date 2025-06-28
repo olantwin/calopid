@@ -1,16 +1,13 @@
 import tensorflow as tf
-from einops import rearrange, repeat
+from einops import rearrange
 from tensorflow.keras import layers, mixed_precision
-from tensorflow.keras.activations import gelu
 from tensorflow.keras.layers import (
     Activation,
     BatchNormalization,
-    Concatenate,
     Conv2D,
     Dense,
     DepthwiseConv2D,
     Dropout,
-    Lambda,
     LayerNormalization,
 )
 from tensorflow.linalg import einsum
