@@ -1,0 +1,16 @@
+executable            = /eos/user/g/grassim/SWAN_projects/noexcave/evaluate_cvt_cls.sh
+arguments             = $(model) $(batch_size) $(epochs) $(data_file)
+output                = logs/evaluate_cvt_cls.$(ClusterId).$(ProcId).out
+error                 = logs/evaluate_cvt_cls.$(ClusterId).$(ProcId).err
+log                   = logs/evaluate_cvt_cls.$(ClusterId).log
+getenv = False
+notification = Never
+request_CPUs = 8
+request_GPUs = 1
+transfer_output_files = ""
+
+requirements = (OpSysAndVer =?= "AlmaLinux9") && regexp("H100", TARGET.GPUs_DeviceName)
++JobFlavour = "testmatch"
+queue model, batch_size, data_file from (
+    CVT_matterhorn_logit_focus_nu_flavour_evtau_n10141_b128_e100.keras, 128, df_nu_CC_muonic_fiducial_test.root
+)

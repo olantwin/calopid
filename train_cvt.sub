@@ -1,0 +1,16 @@
+executable            = /eos/user/g/grassim/SWAN_projects/noexcave/train_cvt.sh
+arguments             = $(model) $(batch_size) $(epochs) $(data_file)
+output                = logs/train_cvt.$(ClusterId).$(ProcId).out
+error                 = logs/train_cvt.$(ClusterId).$(ProcId).err
+log                   = logs/train_cvt.$(ClusterId).log
+getenv = False
+notification = Never
+request_CPUs = 16
+request_GPUs = 1
+transfer_output_files = ""
+
+requirements = (OpSysAndVer =?= "AlmaLinux9") && regexp("H100", TARGET.GPUs_DeviceName)
++JobFlavour = "nextweek"
+queue model, batch_size, epochs, data_file from (
+    CVT_ortles_nu_flavour_muvtau_b128_e0.keras, 128, 100, df_nu_CC_muonic_fiducial_train.root
+)

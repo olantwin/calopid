@@ -28,7 +28,7 @@ class CBAM(layers.Layer):
 
     def __init__(self, ratio=8, name=None, **kwargs):
         """Initialize the CBAM layer with a given attention ratio."""
-        super(CBAM, self).__init__(name=name, **kwargs)
+        super().__init__(**kwargs)
         self.ratio = ratio
 
     def build(self, input_shape):
@@ -37,7 +37,7 @@ class CBAM(layers.Layer):
 
         self.global_avg_pool = GlobalAveragePooling2D()
         self.global_max_pool = GlobalMaxPooling2D()
-        self.reshape = Reshape((1, filters))
+        self.reshape = Reshape((1, 1, filters))
         self.dense1 = Dense(filters // self.ratio, activation="relu")
         self.dense2 = Dense(filters, activation="sigmoid")
 
@@ -57,8 +57,10 @@ class CBAM(layers.Layer):
         avg_pool = self.dense1(avg_pool)
         max_pool = self.dense1(max_pool)
 
+        avg_pool = self.dense2(avg_pool)
+        max_pool = self.dense2(max_pool)
+
         channel_attention = Add()([avg_pool, max_pool])
-        channel_attention = self.dense2(channel_attention)
 
         x = Multiply()([input_tensor, channel_attention])
 
